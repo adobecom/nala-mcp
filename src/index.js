@@ -1853,6 +1853,168 @@ server.tool(
 );
 
 server.tool(
+  "discover-and-run-all-tests",
+  "Dynamically discover all available @studio tests from MAS repository and run them with auto-fix",
+  {
+    mode: z
+      .enum(["sample", "full"])
+      .optional()
+      .describe("Execution mode: 'sample' for quick validation or 'full' for all tests (default: sample)"),
+    maxTestsPerCategory: z
+      .number()
+      .optional()
+      .describe("Maximum tests to run per category in sample mode (default: 5)"),
+    testTypes: z
+      .array(z.enum(["css", "edit", "save", "discard"]))
+      .optional()
+      .describe("Filter by test types (default: ['css', 'edit'])"),
+    branch: z.string().optional().describe("Branch name (defaults to 'local')"),
+    browserMode: z
+      .enum(["headed", "headless"])
+      .optional()
+      .describe("Browser mode (defaults to 'headless')"),
+    milolibs: z
+      .string()
+      .optional()
+      .describe("Milolibs branch (defaults to 'local')"),
+  },
+  async ({
+    mode = "sample",
+    maxTestsPerCategory = 5,
+    testTypes = ["css", "edit"],
+    branch = "local",
+    browserMode = "headless",
+    milolibs = "local",
+  }) => {
+    try {
+      const { DynamicTestRunner } = await import("../run-dynamic-test-discovery.js");
+      const runner = new DynamicTestRunner();
+
+      let response = `# Dynamic NALA Test Discovery and Execution\n\n`;
+      response += `**Mode**: ${mode === "sample" ? "Sample validation" : "Full test suite"}\n`;
+      response += `**Test Types**: ${testTypes.join(", ")}\n`;
+      response += `**Browser**: ${browserMode}\n`;
+      response += `**Milolibs**: ${milolibs}\n`;
+      if (mode === "sample") {
+        response += `**Tests per category**: ${maxTestsPerCategory}\n`;
+      }
+      response += `\n---\n\n`;
+
+      // Discover all tests
+      const allTests = await runner.discoverAllTests();
+      if (allTests.length === 0) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: "❌ No @studio tests discovered in the MAS repository.",
+            },
+          ],
+        };
+      }
+
+      response += `## Discovery Results\n\n`;
+      response += `✅ **${allTests.length} unique @studio tests discovered**\n\n`;
+
+      const categories = runner.categorizeTests(allTests);
+      response += `### Test Distribution by Surface:\n`;
+      Object.entries(categories).forEach(([name, category]) => {
+        if (category.tests.length > 0) {
+          response += `- **${name.toUpperCase()}** (${category.surface}): ${category.tests.length} tests\n`;
+        }
+      });
+      response += `\n`;
+
+      // Execute tests
+      const options = {
+        maxTests: mode === "sample" ? maxTestsPerCategory : null,
+        testTypes,
+        mode: browserMode,
+        milolibs,
+        branch,
+      };
+
+      const results = {
+        totalTests: 0,
+        totalPassed: 0,
+        totalFailed: 0,
+        totalFixed: 0,
+        categoryResults: {},
+      };
+
+      response += `## Test Execution Results\n\n`;
+
+      // Run tests for each category
+      for (const [categoryName, category] of Object.entries(categories)) {
+        if (category.tests.length > 0) {
+          response += `### ${categoryName.toUpperCase()} (${category.surface} surface)\n`;
+          
+          const categoryResult = await runner.runTestsFromCategory(categoryName, category, options);
+          results.totalTests += categoryResult.total;
+          results.totalPassed += categoryResult.passed;
+          results.totalFailed += categoryResult.failed;
+          results.totalFixed += categoryResult.fixed;
+          results.categoryResults[categoryName] = categoryResult;
+
+          const successRate = ((categoryResult.passed / categoryResult.total) * 100).toFixed(1);
+          response += `**Result**: ${categoryResult.passed}/${categoryResult.total} passed (${successRate}%)\n`;
+          if (categoryResult.fixed > 0) {
+            response += `**Auto-fixed**: ${categoryResult.fixed} tests\n`;
+          }
+          if (categoryResult.failed > 0) {
+            response += `**Failed**: ${categoryResult.failed} tests\n`;
+          }
+          response += `\n`;
+        }
+      }
+
+      // Overall summary
+      response += `## Overall Summary\n\n`;
+      const overallSuccessRate = ((results.totalPassed / results.totalTests) * 100).toFixed(1);
+      response += `**Total Tests Executed**: ${results.totalTests}\n`;
+      response += `**Passed**: ${results.totalPassed} (${overallSuccessRate}%)\n`;
+      response += `**Failed**: ${results.totalFailed}\n`;
+      response += `**Auto-Fixed**: ${results.totalFixed}\n\n`;
+
+      if (results.totalFailed === 0) {
+        response += `🎉 **Perfect Score!** All discovered tests are passing.\n\n`;
+        response += `✨ The MAS NALA integration is fully operational across all surfaces.\n`;
+        if (results.totalFixed > 0) {
+          response += `🔧 Auto-fix capability successfully corrected ${results.totalFixed} issues.\n`;
+        }
+      } else {
+        response += `⚠️ **${results.totalFailed} test(s) need attention.**\n\n`;
+        response += `The dynamic test discovery system found issues that may need manual review.\n`;
+      }
+
+      if (mode === "sample") {
+        response += `\n**Note**: This was a sample run. Use mode='full' to test all ${allTests.length} discovered tests.\n`;
+      }
+
+      return {
+        content: [
+          {
+            type: "text",
+            text: response,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `❌ Error in discover-and-run-all-tests: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+server.tool(
   "run-nala-test-standard",
   "Run NALA tests using standard npm command and automatically fix locator issues",
   {

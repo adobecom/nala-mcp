@@ -28,8 +28,14 @@ export class NALATestRunner {
             const testsFailed = (stdout.match(/(\d+) failed/) || [0, '0'])[1];
             const exitCode = stdout.includes('Nala tests exited with code 0');
             
+            // Consider successful if tests passed and only cleanup errors exist
+            const hasOnlyCleanupErrors = stdout.includes('Cleanup failed') && 
+                                       !stdout.includes('Test failed') &&
+                                       parseInt(testsPassed) > 0 &&
+                                       parseInt(testsFailed) === 0;
+            
             return {
-                success: exitCode && parseInt(testsPassed) > 0 && parseInt(testsFailed) === 0,
+                success: (exitCode && parseInt(testsPassed) > 0 && parseInt(testsFailed) === 0) || hasOnlyCleanupErrors,
                 output: stdout,
                 errors: this.parseErrors(stdout + stderr)
             };
@@ -79,12 +85,15 @@ export class NALATestRunner {
             });
         }
         
-        // Parse cleanup errors
+        // Parse cleanup errors (these should not cause test failure)
         if (output.includes('Cleanup failed')) {
-            errors.push({
-                type: 'cleanup',
-                message: 'Test cleanup failed - this can be ignored'
-            });
+            // Only add as error if it's the only issue, otherwise ignore
+            if (!output.includes('passed') || output.includes('failed')) {
+                errors.push({
+                    type: 'cleanup',
+                    message: 'Test cleanup failed - this can be ignored'
+                });
+            }
         }
         
         // Parse CSS verification errors

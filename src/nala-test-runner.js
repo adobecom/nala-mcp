@@ -23,8 +23,13 @@ export class NALATestRunner {
                 maxBuffer: 1024 * 1024 * 10
             });
             
+            // Look for actual test results in the output
+            const testsPassed = (stdout.match(/(\d+) passed/) || [0, '0'])[1];
+            const testsFailed = (stdout.match(/(\d+) failed/) || [0, '0'])[1];
+            const exitCode = stdout.includes('Nala tests exited with code 0');
+            
             return {
-                success: !stderr.includes('failed') && !stdout.includes('failed'),
+                success: exitCode && parseInt(testsPassed) > 0 && parseInt(testsFailed) === 0,
                 output: stdout,
                 errors: this.parseErrors(stdout + stderr)
             };
@@ -40,8 +45,8 @@ export class NALATestRunner {
     parseErrors(output) {
         const errors = [];
         
-        // Parse authentication errors
-        if (output.includes('authenticate') && output.includes('failed')) {
+        // Parse authentication errors (but not cleanup errors)
+        if (output.includes('authenticate') && output.includes('failed') && !output.includes('Cleanup failed')) {
             errors.push({
                 type: 'authentication',
                 message: 'Authentication failed - may need to log in manually'

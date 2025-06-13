@@ -3,65 +3,34 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
-const projectRoot = join(currentDir, '../../..');
+const variantsDataPath = join(currentDir, '../data/card-variants.json');
 
 /**
- * Extract card variants from the variant picker file
+ * Load card variants from local data file
+ * @returns {Object} Card variants data
+ */
+function loadVariantsData() {
+    try {
+        const content = readFileSync(variantsDataPath, 'utf-8');
+        return JSON.parse(content);
+    } catch (error) {
+        console.error('Error loading variants data:', error.message);
+        return { variants: [] };
+    }
+}
+
+/**
+ * Extract card variants from the data file
  * @returns {Array<string>} Array of card variant values
  */
 export function getCardVariantsFromSource() {
-    try {
-        const variantPickerPath = join(
-            projectRoot,
-            'studio/src/editors/variant-picker.js',
-        );
-        const content = readFileSync(variantPickerPath, 'utf-8');
-
-        // Extract the VARIANTS array using regex
-        const variantsMatch = content.match(
-            /export const VARIANTS = \[([\s\S]*?)\];/,
-        );
-        if (!variantsMatch) {
-            throw new Error(
-                'Could not find VARIANTS array in variant-picker.js',
-            );
-        }
-
-        const variantsContent = variantsMatch[1];
-
-        // Extract all value properties using regex
-        const valueMatches = variantsContent.matchAll(
-            /value:\s*['"`]([^'"`]+)['"`]/g,
-        );
-        const variants = Array.from(valueMatches, (match) => match[1]);
-
-        // Filter out 'all' as it's not a real card type
-        const cardTypes = variants.filter((variant) => variant !== 'all');
-
-        console.error(`Found ${cardTypes.length} card types:`, cardTypes);
-        return cardTypes;
-    } catch (error) {
-        console.error('Error reading variants from source:', error.message);
-        // Fallback to hardcoded list
-        return [
-            'suggested',
-            'catalog',
-            'plans',
-            'segment',
-            'special-offers',
-            'twp',
-            'inline-heading',
-            'product',
-            'mini-compare-chart',
-            'fries',
-            'ccd-slice',
-            'ccd-suggested',
-            'plans-students',
-            'plans-education',
-            'ah-try-buy-widget',
-            'ah-promoted-plans',
-        ];
-    }
+    const data = loadVariantsData();
+    const cardTypes = data.variants
+        .map((variant) => variant.value)
+        .filter((value) => value !== 'all');
+    
+    console.error(`Found ${cardTypes.length} card types:`, cardTypes);
+    return cardTypes;
 }
 
 /**
@@ -115,59 +84,10 @@ export function getFullVariantName(simplifiedType) {
 }
 
 /**
- * Get card type metadata from variant picker
+ * Get card type metadata from variant data
  * @returns {Array<Object>} Array of card type objects with label, value, and surface
  */
 export function getCardTypeMetadata() {
-    try {
-        const variantPickerPath = join(
-            projectRoot,
-            'studio/src/editors/variant-picker.js',
-        );
-        const content = readFileSync(variantPickerPath, 'utf-8');
-
-        // Extract the VARIANTS array
-        const variantsMatch = content.match(
-            /export const VARIANTS = \[([\s\S]*?)\];/,
-        );
-        if (!variantsMatch) {
-            throw new Error('Could not find VARIANTS array');
-        }
-
-        const variantsContent = variantsMatch[1];
-
-        // Parse each variant object
-        const variants = [];
-        const objectMatches = variantsContent.matchAll(/\{([^}]+)\}/g);
-
-        for (const match of objectMatches) {
-            const objectContent = match[1];
-            const labelMatch = objectContent.match(
-                /label:\s*['"`]([^'"`]+)['"`]/,
-            );
-            const valueMatch = objectContent.match(
-                /value:\s*['"`]([^'"`]+)['"`]/,
-            );
-            const surfaceMatch = objectContent.match(
-                /surface:\s*['"`]([^'"`]+)['"`]/,
-            );
-
-            if (labelMatch && valueMatch && surfaceMatch) {
-                const value = valueMatch[1];
-                if (value !== 'all') {
-                    // Skip the 'all' option
-                    variants.push({
-                        label: labelMatch[1],
-                        value: value,
-                        surface: surfaceMatch[1],
-                    });
-                }
-            }
-        }
-
-        return variants;
-    } catch (error) {
-        console.error('Error parsing variant metadata:', error.message);
-        return [];
-    }
+    const data = loadVariantsData();
+    return data.variants.filter((variant) => variant.value !== 'all');
 }

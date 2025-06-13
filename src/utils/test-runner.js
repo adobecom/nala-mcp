@@ -3,9 +3,7 @@ import { existsSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { getNALADirectoryPath, getCardSurface } from './file-output.js';
-
-const currentDir = dirname(fileURLToPath(import.meta.url));
-const projectRoot = join(currentDir, '../../..');
+import { getTargetProjectRoot, getTestOutputPath } from '../config.js';
 
 /**
  * Test execution result
@@ -47,9 +45,9 @@ export async function runNALATest(cardType, testType, options = {}) {
 
     const startTime = Date.now();
     const surface = getCardSurface(cardType);
+    const testOutputPath = getTestOutputPath();
     const testFilePath = join(
-        projectRoot,
-        'nala',
+        testOutputPath,
         'studio',
         surface,
         cardType,
@@ -253,7 +251,7 @@ function executePlaywrightTest(testFilePath, options = {}) {
             IMS_PASS: process.env.IMS_PASS || 'AdobeTestPassword321$',
         };
 
-
+        const projectRoot = getTargetProjectRoot();
 
         const child = spawn('npx', ['playwright', ...args], {
             cwd: projectRoot,
@@ -300,7 +298,8 @@ function executePlaywrightTest(testFilePath, options = {}) {
  */
 export async function validateGeneratedFiles(cardType, testType) {
     const surface = getCardSurface(cardType);
-    const baseDir = join(projectRoot, 'nala', 'studio', surface, cardType);
+    const testOutputPath = getTestOutputPath();
+    const baseDir = join(testOutputPath, 'studio', surface, cardType);
 
     const files = {
         pageObject: join(baseDir, `${cardType}.page.js`),

@@ -1,15 +1,16 @@
 {
-  "name": "nala-test-generator-mcp",
+  "name": "nala-mcp",
   "version": "1.0.0",
   "description": "MCP server for automating NALA (Playwright) test generation for card components",
   "type": "module",
   "main": "src/index.js",
   "bin": {
-    "nala-test-generator": "./src/index.js"
+    "nala-mcp": "./src/index.js"
   },
   "scripts": {
     "start": "node src/index.js",
-    "test": "node src/index.js"
+    "test": "node src/index.js",
+    "init": "node src/cli.js init"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -23,6 +24,14 @@
     "test-automation",
     "card-testing"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/nala-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/nala-mcp/issues"
+  },
+  "homepage": "https://github.com/yourusername/nala-mcp#readme",
   "author": "MAS Team",
   "license": "MIT"
 }

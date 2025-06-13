@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# NALA Test Generator - Cursor Setup Script
-# This script sets up the NALA Test Generator for use with Cursor
+# NALA MCP - Cursor Setup Script
+# This script sets up the NALA MCP for use with Cursor
 
-echo "🚀 Setting up NALA Test Generator for Cursor..."
+echo "🚀 Setting up NALA MCP for Cursor..."
 
 # Check if we're in the right directory
 if [ ! -f "package.json" ] || [ ! -d "src" ]; then
-    echo "❌ Please run this script from the nala-test-generator-mcp directory"
+    echo "❌ Please run this script from the nala-mcp directory"
     exit 1
 fi
 
@@ -88,7 +88,7 @@ chmod +x cursor-integration.js
 chmod +x test-auto-extract.js
 
 echo ""
-echo "🎉 Setup complete! Here's how to use NALA Test Generator in Cursor:"
+echo "🎉 Setup complete! Here's how to use NALA MCP in Cursor:"
 echo ""
 echo "📋 Quick Commands:"
 echo "   node cursor-integration.js example                    # Get example config"

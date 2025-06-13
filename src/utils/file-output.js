@@ -1,10 +1,7 @@
 import { writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { getCardTypeMetadata } from './variant-reader.js';
-
-const currentDir = dirname(fileURLToPath(import.meta.url));
-const projectRoot = join(currentDir, '../../..');
+import { getTargetProjectRoot, getTestOutputPath } from '../config.js';
 
 /**
  * Get the surface for a given card type
@@ -15,11 +12,12 @@ export function getCardSurface(cardType) {
     const metadata = getCardTypeMetadata();
     
     // Find metadata for this card type (try both simplified and full names)
-    const meta = metadata.find(m => 
-        m.value === cardType || 
-        m.value.endsWith(`-${cardType}`) ||
-        m.value === `ccd-${cardType}` ||
-        m.value === `ah-${cardType}`
+    const meta = metadata.find(
+        (m) =>
+            m.value === cardType ||
+            m.value.endsWith(`-${cardType}`) ||
+            m.value === `ccd-${cardType}` ||
+            m.value === `ah-${cardType}`,
     );
     
     if (meta) {
@@ -28,16 +26,16 @@ export function getCardSurface(cardType) {
     
     // Fallback mapping for common types
     const surfaceMapping = {
-        'suggested': 'ccd',
-        'slice': 'ccd',
-        'catalog': 'acom',
-        'plans': 'acom',
+        suggested: 'ccd',
+        slice: 'ccd',
+        catalog: 'acom',
+        plans: 'acom',
         'plans-students': 'acom',
         'plans-education': 'acom',
         'special-offers': 'acom',
-        'fries': 'commerce',
+        fries: 'commerce',
         'promoted-plans': 'adobe-home',
-        'try-buy-widget': 'adobe-home'
+        'try-buy-widget': 'adobe-home',
     };
     
     return surfaceMapping[cardType] || 'acom';
@@ -46,11 +44,11 @@ export function getCardSurface(cardType) {
 /**
  * Get the NALA directory path for a card type
  * @param {string} cardType - The card type (simplified name)
- * @returns {string} The directory path relative to project root
+ * @returns {string} The directory path relative to test output path
  */
 export function getNALADirectoryPath(cardType) {
     const surface = getCardSurface(cardType);
-    return join('nala', 'studio', surface, cardType);
+    return join('studio', surface, cardType);
 }
 
 /**
@@ -62,10 +60,11 @@ export function getNALADirectoryPath(cardType) {
  */
 export function getNALAFilePath(cardType, fileName, subDir = null) {
     const baseDir = getNALADirectoryPath(cardType);
+    const testOutputPath = getTestOutputPath();
     if (subDir) {
-        return join(projectRoot, baseDir, subDir, fileName);
+        return join(testOutputPath, baseDir, subDir, fileName);
     }
-    return join(projectRoot, baseDir, fileName);
+    return join(testOutputPath, baseDir, fileName);
 }
 
 /**

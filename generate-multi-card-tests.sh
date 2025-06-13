@@ -25,7 +25,7 @@ echo ""
 
 # Check if we're in the right directory
 if [ ! -f "cursor-integration.js" ]; then
-    echo "❌ Error: cursor-integration.js not found. Please run this script from the nala-test-generator-mcp directory."
+    echo "❌ Error: cursor-integration.js not found. Please run this script from the nala-mcp directory."
     exit 1
 fi
 

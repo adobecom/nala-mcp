@@ -3,6 +3,8 @@ import { promisify } from 'util';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { chromium } from 'playwright';
+import { autoFixAllErrors } from './utils/error-fixer.js';
+import { getTargetProjectRoot } from './config.js';
 
 const execAsync = promisify(exec);
 
@@ -291,4 +293,9 @@ export async function runNALATestWithFixes(params) {
         mode,
         milolibs
     });
-} 
+}
+
+// Execute the test
+const projectRoot = getTargetProjectRoot();
+const testCommand = `npx playwright test ${testFilePath} --project=mas-live-chromium --reporter=list`;
+const testOutput = await executeCommand(testCommand, projectRoot); 

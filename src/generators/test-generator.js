@@ -3,6 +3,8 @@
  * @typedef {import('../types.js').TestType} TestType
  */
 
+import { getImportPaths } from '../config.js';
+
 export class TestGenerator {
   /**
    * @param {CardConfig} config
@@ -10,7 +12,7 @@ export class TestGenerator {
    * @returns {string}
    */
   generateTestFile(config, testType) {
-    const imports = this.generateImports(config, testType);
+    const imports = this.getTestImports(config, testType);
     const setup = this.generateSetup(config);
     const tests = this.generateTests(config, testType);
 
@@ -25,26 +27,28 @@ ${tests}
   }
 
   /**
-   * @param {CardConfig} config
-   * @param {TestType} testType
-   * @returns {string}
+   * Get the imports for a test file based on test type
+   * @param {CardConfig} config - Card configuration
+   * @param {TestType} testType - Test type
+   * @returns {string} Import statements
    */
-  generateImports(config, testType) {
-    const className = this.generateClassName(config.cardType);
+  getTestImports(config, testType) {
+    const className = this.getClassName(config.cardType);
     const specFileName = `${config.cardType}_${testType}.spec.js`;
-    
-    let imports = `import { expect, test } from '@playwright/test';
-import StudioPage from '../../../studio.page.js';
+    const importPaths = getImportPaths();
+
+    let imports = `import { test, expect } from '@playwright/test';
+import StudioPage from '${importPaths.studioPage}';
 import ${className}Spec from '../specs/${specFileName}';
 import ${className} from '../${config.cardType}.page.js';
-import WebUtil from '../../../../libs/webutil.js';`;
+import WebUtil from '${importPaths.webUtil}';`;
 
     if (testType === 'edit' || testType === 'save' || testType === 'discard') {
-      imports += `\nimport EditorPage from '../../../editor.page.js';`;
+      imports += `\nimport EditorPage from '${importPaths.editorPage}';`;
     }
 
-    if (testType === 'edit' || testType === 'save') {
-      imports += `\nimport OSTPage from '../../../ost.page.js';`;
+    if (testType === 'save') {
+      imports += `\nimport OSTPage from '${importPaths.ostPage}';`;
     }
 
     return imports;
@@ -55,7 +59,7 @@ import WebUtil from '../../../../libs/webutil.js';`;
    * @returns {string}
    */
   generateSetup(config) {
-    const className = this.generateClassName(config.cardType);
+    const className = this.getClassName(config.cardType);
     const variableName = config.cardType.replace(/-/g, '');
     const testType = config.testTypes?.[0] || 'css';
 

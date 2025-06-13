@@ -1,0 +1,99 @@
+{
+  "variants": [
+    {
+      "label": "Catalog",
+      "value": "catalog",
+      "surface": "acom"
+    },
+    {
+      "label": "Plans",
+      "value": "plans",
+      "surface": "acom"
+    },
+    {
+      "label": "Segment",
+      "value": "segment",
+      "surface": "acom"
+    },
+    {
+      "label": "Special Offers",
+      "value": "special-offers",
+      "surface": "acom"
+    },
+    {
+      "label": "TWP",
+      "value": "twp",
+      "surface": "acom"
+    },
+    {
+      "label": "Inline Heading",
+      "value": "inline-heading",
+      "surface": "acom"
+    },
+    {
+      "label": "Product",
+      "value": "product",
+      "surface": "acom"
+    },
+    {
+      "label": "Mini Compare Chart",
+      "value": "mini-compare-chart",
+      "surface": "acom"
+    },
+    {
+      "label": "Plans Students",
+      "value": "plans-students",
+      "surface": "acom"
+    },
+    {
+      "label": "Plans Education",
+      "value": "plans-education",
+      "surface": "acom"
+    },
+    {
+      "label": "Fries",
+      "value": "fries",
+      "surface": "commerce"
+    },
+    {
+      "label": "CCD Slice",
+      "value": "ccd-slice",
+      "surface": "ccd"
+    },
+    {
+      "label": "CCD Suggested",
+      "value": "ccd-suggested",
+      "surface": "ccd"
+    },
+    {
+      "label": "AH Try Buy Widget",
+      "value": "ah-try-buy-widget",
+      "surface": "adobe-home"
+    },
+    {
+      "label": "AH Promoted Plans",
+      "value": "ah-promoted-plans",
+      "surface": "adobe-home"
+    },
+    {
+      "label": "Suggested",
+      "value": "suggested",
+      "surface": "ccd"
+    },
+    {
+      "label": "Slice",
+      "value": "slice",
+      "surface": "ccd"
+    },
+    {
+      "label": "Try Buy Widget",
+      "value": "try-buy-widget",
+      "surface": "adobe-home"
+    },
+    {
+      "label": "Promoted Plans",
+      "value": "promoted-plans",
+      "surface": "adobe-home"
+    }
+  ]
+} 

@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { getNALADirectoryPath, getCardSurface } from './file-output.js';
+import { getTargetProjectRoot, getTestOutputPath, getImportPaths } from '../config.js';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(currentDir, '../../..');
@@ -23,14 +24,15 @@ const ERROR_PATTERNS = {
         pattern: /Missing required import: (.+)/,
         fix: (content, match) => {
             const importName = match[1];
+            const importPaths = getImportPaths();
             const importMap = {
                 expect: "import { expect } from '@playwright/test';",
                 test: "import { test } from '@playwright/test';",
                 '@playwright/test':
                     "import { test, expect } from '@playwright/test';",
                 StudioPage:
-                    "import StudioPage from '../../../libs/studio-page.js';",
-                WebUtil: "import WebUtil from '../../../libs/webutil.js';",
+                    `import StudioPage from '${importPaths.studioPage}';`,
+                WebUtil: `import WebUtil from '${importPaths.webUtil}';`,
             };
 
             if (importMap[importName]) {
@@ -180,9 +182,9 @@ export async function fixTestErrors(cardType, testType, errors, options = {}) {
     const { dryRun = false, backupOriginal = true } = options;
 
     const surface = getCardSurface(cardType);
+    const testOutputPath = getTestOutputPath();
     const testFilePath = join(
-        projectRoot,
-        'nala',
+        testOutputPath,
         'studio',
         surface,
         cardType,
@@ -278,13 +280,12 @@ export async function fixPageObjectErrors(
     const { dryRun = false, backupOriginal = true } = options;
 
     const surface = getCardSurface(cardType);
+    const testOutputPath = getTestOutputPath();
     const pageObjectPath = join(
-        projectRoot,
-        'nala',
+        testOutputPath,
         'studio',
         surface,
         cardType,
-        'page-objects',
         `${cardType}.page.js`,
     );
 
@@ -375,9 +376,9 @@ export async function fixSpecErrors(cardType, testType, errors, options = {}) {
     const { dryRun = false, backupOriginal = true } = options;
 
     const surface = getCardSurface(cardType);
+    const testOutputPath = getTestOutputPath();
     const specPath = join(
-        projectRoot,
-        'nala',
+        testOutputPath,
         'studio',
         surface,
         cardType,

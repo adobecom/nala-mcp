@@ -3,7 +3,7 @@
 ## 1. Install Dependencies
 
 ```bash
-cd nala-test-generator-mcp
+cd nala-mcp
 npm install
 ```
 
@@ -22,10 +22,10 @@ If Cursor has built-in MCP support, add this to your Cursor settings:
 1. Open Cursor Settings (Cmd/Ctrl + ,)
 2. Search for "MCP" or "Model Context Protocol"
 3. Add a new MCP server with these settings:
-   - **Name**: `nala-test-generator`
+   - **Name**: `nala-mcp`
    - **Command**: `node`
    - **Args**: `["./src/index.js"]`
-   - **Working Directory**: `./nala-test-generator-mcp` (relative to your workspace)
+   - **Working Directory**: `./nala-mcp` (relative to your workspace)
 
 ## 4. Alternative: Use Bridge Script (Option 2)
 
@@ -46,14 +46,17 @@ node cursor-integration.js test-impl example-config.json css
 ## 5. Test the Integration
 
 ### Using Cursor (if MCP supported):
+
 Try these natural language commands:
 
 1. **Get an example configuration**:
+
    ```
    Create an example configuration for the suggested card
    ```
 
 2. **Generate a complete test suite**:
+
    ```
    Generate a complete test suite for this card configuration: [paste JSON from example]
    ```
@@ -64,6 +67,7 @@ Try these natural language commands:
    ```
 
 ### Using Bridge Script:
+
 ```bash
 # Test all functionality
 node test-mcp.js
@@ -90,7 +94,7 @@ Open `browser-integration.html` in your browser to see a demo of how this could 
 ## Project Structure
 
 ```
-nala-test-generator-mcp/
+nala-mcp/
 ├── src/
 │   ├── index.js                 # Main MCP server
 │   ├── types.js                 # Type definitions
@@ -104,16 +108,19 @@ nala-test-generator-mcp/
 ## Troubleshooting
 
 ### Server Won't Start
+
 - Check Node.js version: `node --version` (requires Node.js 16+)
 - Install dependencies: `npm install`
 - Check for syntax errors: `node src/index.js`
 
 ### Cursor Integration Issues
+
 - Verify MCP server starts without errors
 - Check Cursor's MCP configuration uses relative paths
 - Try the bridge script as fallback: `node cursor-integration.js help`
 
 ### Tools Not Working
+
 - Test with bridge script first: `node test-mcp.js`
 - Check configuration file format matches schema
 - Verify all required fields are present in config
@@ -133,4 +140,4 @@ This setup uses relative paths so teammates can:
 1. **Read the full documentation**: See `README.md` and `CURSOR_SETUP.md`
 2. **Create custom configurations**: Modify `example-config.json` for your cards
 3. **Integrate with NALA**: Use generated tests in your test suite
-4. **Set up automation**: Create workflows for automatic test generation 
+4. **Set up automation**: Create workflows for automatic test generation

@@ -10,10 +10,10 @@ const execAsync = promisify(exec);
 
 export class NALATestRunner {
     constructor() {
-        this.rootPath = process.cwd();
+        this.rootPath = getTargetProjectRoot();
     }
 
-    async runNALATest(testTag, branch = 'local', mode = 'headed', milolibs = 'local') {
+    async runNALATest(testTag, branch = 'local', mode = 'headless', milolibs = 'local') {
         const command = `npm run nala branch ${branch} ${testTag} mode=${mode} milolibs=${milolibs}`;
         console.log(`Running NALA test: ${command}`);
         
@@ -40,6 +40,14 @@ export class NALATestRunner {
     parseErrors(output) {
         const errors = [];
         
+        // Parse authentication errors
+        if (output.includes('authenticate') && output.includes('failed')) {
+            errors.push({
+                type: 'authentication',
+                message: 'Authentication failed - may need to log in manually'
+            });
+        }
+        
         // Parse CSS property errors
         if (output.includes('Cannot convert undefined or null to object')) {
             errors.push({
@@ -63,6 +71,22 @@ export class NALATestRunner {
             errors.push({
                 type: 'timeout',
                 message: 'Test timed out waiting for element or action'
+            });
+        }
+        
+        // Parse cleanup errors
+        if (output.includes('Cleanup failed')) {
+            errors.push({
+                type: 'cleanup',
+                message: 'Test cleanup failed - this can be ignored'
+            });
+        }
+        
+        // Parse CSS verification errors
+        if (output.includes('Expected') && output.includes('toBeTruthy')) {
+            errors.push({
+                type: 'css-mismatch',
+                message: 'CSS properties do not match expected values'
             });
         }
         
@@ -231,7 +255,7 @@ export class NALATestRunner {
     }
 
     async runAndFix(testTag, cardType, cardId, options = {}) {
-        const { branch = 'local', mode = 'headed', milolibs = 'local', maxAttempts = 3 } = options;
+        const { branch = 'local', mode = 'headless', milolibs = 'local', maxAttempts = 3 } = options;
         
         let attempt = 0;
         let lastResult;
@@ -293,9 +317,4 @@ export async function runNALATestWithFixes(params) {
         mode,
         milolibs
     });
-}
-
-// Execute the test
-const projectRoot = getTargetProjectRoot();
-const testCommand = `npx playwright test ${testFilePath} --project=mas-live-chromium --reporter=list`;
-const testOutput = await executeCommand(testCommand, projectRoot); 
+} 

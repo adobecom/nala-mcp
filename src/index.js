@@ -1865,7 +1865,7 @@ server.tool(
     mode: z
       .enum(["headed", "headless"])
       .optional()
-      .describe("Browser mode (defaults to 'headed')"),
+      .describe("Browser mode (defaults to 'headless' for background execution)"),
     milolibs: z
       .string()
       .optional()
@@ -1880,7 +1880,7 @@ server.tool(
     cardType,
     cardId,
     branch = "local",
-    mode = "headed",
+    mode = "headless",
     milolibs = "local",
     maxAttempts = 3,
   }) => {

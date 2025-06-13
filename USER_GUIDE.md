@@ -244,6 +244,68 @@ nala/studio/acom/plans/
 └── tests/plans_edit.test.js
 ```
 
+## Running Tests in Background
+
+### Why Run Tests in Background?
+
+- **Parallel Execution**: Run multiple test types simultaneously
+- **Non-blocking**: Continue working while tests run
+- **Better Performance**: Execute tests for multiple cards at once
+- **Logging**: Capture output to files for later review
+
+### Using the Background Runner
+
+```bash
+# Run default test set in background
+node run-tests-background.js
+
+# Run specific tests in background
+node run-tests-background.js fries:css:fries-ace plans:edit:plans-123
+
+# Multiple tests
+node run-tests-background.js fries:css:fries-ace fries:edit:fries-ace catalog:save:catalog-test
+```
+
+### Direct Background Execution
+
+```bash
+# Single test in background
+node cursor-integration.js generate-and-test css "fries-ace" fries main true &
+
+# Multiple parallel tests
+node cursor-integration.js run-tests fries css true &
+node cursor-integration.js run-tests plans edit true &
+node cursor-integration.js run-tests catalog save true &
+```
+
+### Monitoring Background Tests
+
+```bash
+# View all test logs
+tail -f nala-test-logs/*.log
+
+# Check running processes
+ps aux | grep cursor-integration
+
+# View specific test output
+tail -f nala-test-logs/test-fries-css-*.log
+```
+
+### MCP Background Execution
+
+When using the MCP server through Cursor or other clients, background execution is limited because:
+
+1. **MCP Protocol**: Designed for request-response patterns
+2. **Environment Isolation**: MCP servers run in isolated environments
+3. **Result Collection**: Background processes can't easily return results
+
+**Default Behavior**: MCP tools now run tests in headless mode by default for background execution.
+
+**Recommendation**: 
+- MCP tools automatically use headless mode for background execution
+- Use the CLI commands with `&` or the `run-tests-background.js` script for explicit background control
+- Override with `mode: "headed"` in MCP tools if you need to see the browser
+
 ## Troubleshooting
 
 ### Common Issues

@@ -115,8 +115,14 @@ let ${blockType.replace(/-/g, '')};
 const miloLibs = process.env.MILO_LIBS || '';
 
 test.describe('Milo ${displayName} ${blockType === blockType ? 'Block' : 'Feature'} test suite', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'Not supported to run on multiple browsers.');
+    
     ${blockType.replace(/-/g, '')} = new ${className}(page);
+    
+    if (browserName === 'chromium') {
+      await page.setExtraHTTPHeaders({ 'sec-ch-ua': '"Chromium";v="123", "Not:A-Brand";v="8"' });
+    }
   });
 
   // Test 0: Basic ${displayName} functionality
@@ -177,8 +183,14 @@ let ${blockType.replace(/-/g, '')};
 const miloLibs = process.env.MILO_LIBS || '';
 
 test.describe('Milo ${displayName} CSS test suite', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'Not supported to run on multiple browsers.');
+    
     ${blockType.replace(/-/g, '')} = new ${className}(page);
+    
+    if (browserName === 'chromium') {
+      await page.setExtraHTTPHeaders({ 'sec-ch-ua': '"Chromium";v="123", "Not:A-Brand";v="8"' });
+    }
   });
 
   test(\`\${features[0].name} - CSS verification,\${features[0].tags}\`, async ({ page, baseURL }) => {
@@ -214,8 +226,14 @@ let ${blockType.replace(/-/g, '')};
 const miloLibs = process.env.MILO_LIBS || '';
 
 test.describe('Milo ${displayName} interaction test suite', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'Not supported to run on multiple browsers.');
+    
     ${blockType.replace(/-/g, '')} = new ${className}(page);
+    
+    if (browserName === 'chromium') {
+      await page.setExtraHTTPHeaders({ 'sec-ch-ua': '"Chromium";v="123", "Not:A-Brand";v="8"' });
+    }
   });
 
   test(\`\${features[0].name} - Interaction test,\${features[0].tags}\`, async ({ page, baseURL }) => {

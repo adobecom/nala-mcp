@@ -1,7 +1,7 @@
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { getCardTypeMetadata } from './variant-reader.js';
-import { getTargetProjectRoot, getTestOutputPath } from '../config.js';
+import { getTargetProjectRoot, getTestOutputPath, getProjectType } from '../config.js';
 
 /**
  * Get the surface for a given card type
@@ -154,4 +154,93 @@ export function getFileSaveSummary(cardType, testType) {
             test: join(baseDir, 'tests', `${cardType}_${testType}.test.js`)
         }
     };
+}
+
+/**
+ * Get the NALA directory path for Milo blocks/features
+ * @param {string} type - The block/feature type (can include path like 'feds/header')
+ * @param {string} category - 'block' or 'feature'
+ * @param {string} [projectName] - Project name
+ * @returns {string} The directory path relative to test output path
+ */
+export function getMiloDirectoryPath(type, category = 'block', projectName) {
+    const projectType = getProjectType(projectName);
+    
+    if (projectType !== 'milo') {
+        throw new Error('getMiloDirectoryPath can only be used for Milo projects');
+    }
+    
+    const pathParts = type.split('/');
+    if (category === 'block') {
+        return join('blocks', ...pathParts);
+    } else {
+        return join('features', ...pathParts);
+    }
+}
+
+/**
+ * Get the full file path for a Milo test file
+ * @param {string} type - The block/feature type
+ * @param {string} fileName - The file name
+ * @param {string} category - 'block' or 'feature'
+ * @param {string} [projectName] - Project name
+ * @returns {string} Full file path
+ */
+export function getMiloFilePath(type, fileName, category = 'block', projectName) {
+    const baseDir = getMiloDirectoryPath(type, category, projectName);
+    const testOutputPath = getTestOutputPath(projectName);
+    return join(testOutputPath, baseDir, fileName);
+}
+
+/**
+ * Write a test file with proper error handling
+ * @param {string} filePath - Full file path
+ * @param {string} content - File content
+ * @returns {Object} Result object with path and success status
+ */
+export async function writeTestFile(filePath, content) {
+    try {
+        const dirPath = dirname(filePath);
+        
+        // Create directory if it doesn't exist
+        if (!existsSync(dirPath)) {
+            mkdirSync(dirPath, { recursive: true });
+        }
+        
+        // Write the file
+        writeFileSync(filePath, content, 'utf-8');
+        
+        return {
+            success: true,
+            path: filePath,
+            message: `File written successfully: ${filePath}`
+        };
+    } catch (error) {
+        return {
+            success: false,
+            path: filePath,
+            error: error.message,
+            message: `Failed to write file: ${filePath} - ${error.message}`
+        };
+    }
+}
+
+/**
+ * Get the appropriate file path based on project type
+ * @param {string} type - The card/block/feature type
+ * @param {string} fileName - The file name
+ * @param {Object} options - Options
+ * @param {string} [options.projectName] - Project name
+ * @param {string} [options.category] - 'block' or 'feature' (for Milo)
+ * @param {string} [options.subDir] - Subdirectory (for MAS)
+ * @returns {string} Full file path
+ */
+export function getTestFilePath(type, fileName, options = {}) {
+    const projectType = getProjectType(options.projectName);
+    
+    if (projectType === 'milo') {
+        return getMiloFilePath(type, fileName, options.category || 'block', options.projectName);
+    } else {
+        return getNALAFilePath(type, fileName, options.subDir);
+    }
 } 

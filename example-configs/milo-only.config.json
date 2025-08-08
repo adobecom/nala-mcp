@@ -1,0 +1,15 @@
+{
+  "projects": {
+    "milo": {
+      "path": "/Users/axelcurenobasurto/Web/milo",
+      "type": "milo",
+      "testOutputPath": "nala",
+      "importPaths": {
+        "webUtil": "../../libs/webutil.js",
+        "imsLogin": "../../libs/imslogin.js",
+        "accessibility": "../../libs/accessibility.js"
+      }
+    }
+  },
+  "defaultProject": "milo"
+}

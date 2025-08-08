@@ -33,7 +33,7 @@ ${tests}
    * @returns {string} Import statements
    */
   getTestImports(config, testType) {
-    const className = this.getClassName(config.cardType);
+    const className = this.generateClassName(config.cardType);
     const specFileName = `${config.cardType}_${testType}.spec.js`;
     const importPaths = getImportPaths();
 
@@ -59,7 +59,7 @@ import WebUtil from '${importPaths.webUtil}';`;
    * @returns {string}
    */
   generateSetup(config) {
-    const className = this.getClassName(config.cardType);
+    const className = this.generateClassName(config.cardType);
     const variableName = config.cardType.replace(/-/g, '');
     const testType = config.testTypes?.[0] || 'css';
 
@@ -72,15 +72,15 @@ let webUtil;`;
 
     // Only add editor and ost variables for test types that need them
     if (testType === 'edit' || testType === 'save' || testType === 'discard') {
-      setup += `\nlet editor;`;
+      setup += '\nlet editor;';
     }
     
     if (testType === 'edit' || testType === 'save') {
-      setup += `\nlet ost;`;
+      setup += '\nlet ost;';
     }
     
     if (config.testTypes?.includes('save')) {
-      setup += `\nlet clonedCardID;`;
+      setup += '\nlet clonedCardID;';
     }
 
     setup += `
@@ -98,14 +98,14 @@ test.beforeEach(async ({ page, browserName }) => {
 
     // Only instantiate editor and ost for test types that need them
     if (testType === 'edit' || testType === 'save' || testType === 'discard') {
-      setup += `\n    editor = new EditorPage(page);`;
+      setup += '\n    editor = new EditorPage(page);';
     }
     
     if (testType === 'edit' || testType === 'save') {
-      setup += `\n    ost = new OSTPage(page);`;
+      setup += '\n    ost = new OSTPage(page);';
     }
 
-    setup += `\n});`;
+    setup += '\n});';
 
     return setup;
   }

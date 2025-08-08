@@ -26,10 +26,10 @@ const ERROR_PATTERNS = {
             const importName = match[1];
             const importPaths = getImportPaths();
             const importMap = {
-                expect: "import { expect } from '@playwright/test';",
-                test: "import { test } from '@playwright/test';",
+                expect: 'import { expect } from \'@playwright/test\';',
+                test: 'import { test } from \'@playwright/test\';',
                 '@playwright/test':
-                    "import { test, expect } from '@playwright/test';",
+                    'import { test, expect } from \'@playwright/test\';',
                 StudioPage:
                     `import StudioPage from '${importPaths.studioPage}';`,
                 WebUtil: `import WebUtil from '${importPaths.webUtil}';`,
@@ -438,7 +438,7 @@ export async function fixSpecErrors(cardType, testType, errors, options = {}) {
             if (!content.includes('features')) {
                 content = content.replace(
                     /(FeatureName: '[^']+',)/,
-                    `$1\n    features: [],`,
+                    '$1\n    features: [],',
                 );
                 fixesApplied.push(`Added features array: ${error}`);
                 errorFixed = true;

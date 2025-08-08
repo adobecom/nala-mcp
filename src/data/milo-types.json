@@ -1,0 +1,232 @@
+{
+  "blocks": {
+    "accordion": {
+      "displayName": "Accordion",
+      "testTypes": ["functional", "css", "interaction"]
+    },
+    "actionitem": {
+      "displayName": "Action Item",
+      "testTypes": ["functional", "css"]
+    },
+    "aside": {
+      "displayName": "Aside",
+      "testTypes": ["functional", "css"]
+    },
+    "block-group": {
+      "displayName": "Block Group",
+      "testTypes": ["functional", "css"]
+    },
+    "brick": {
+      "displayName": "Brick",
+      "testTypes": ["functional", "css"]
+    },
+    "card": {
+      "displayName": "Card",
+      "testTypes": ["functional", "css", "interaction"]
+    },
+    "carousel": {
+      "displayName": "Carousel",
+      "testTypes": ["functional", "css", "interaction"]
+    },
+    "chart": {
+      "displayName": "Chart",
+      "testTypes": ["functional", "css"]
+    },
+    "columns": {
+      "displayName": "Columns",
+      "testTypes": ["functional", "css"]
+    },
+    "figure": {
+      "displayName": "Figure",
+      "testTypes": ["functional", "css"]
+    },
+    "howto": {
+      "displayName": "How To",
+      "testTypes": ["functional", "css"]
+    },
+    "icon": {
+      "displayName": "Icon",
+      "testTypes": ["functional", "css"]
+    },
+    "iframe": {
+      "displayName": "iFrame",
+      "testTypes": ["functional", "interaction"]
+    },
+    "marketo": {
+      "displayName": "Marketo",
+      "testTypes": ["functional", "interaction"]
+    },
+    "marquee": {
+      "displayName": "Marquee",
+      "testTypes": ["functional", "css", "interaction"]
+    },
+    "marquee-anchors": {
+      "displayName": "Marquee Anchors",
+      "testTypes": ["functional", "css", "interaction"]
+    },
+    "media": {
+      "displayName": "Media",
+      "testTypes": ["functional", "css"]
+    },
+    "merchcard": {
+      "displayName": "Merch Card",
+      "testTypes": ["functional", "css", "interaction"]
+    },
+    "mnemonic": {
+      "displayName": "Mnemonic",
+      "testTypes": ["functional", "css"]
+    },
+    "modal": {
+      "displayName": "Modal",
+      "testTypes": ["functional", "css", "interaction"]
+    },
+    "notification": {
+      "displayName": "Notification",
+      "testTypes": ["functional", "css", "interaction"]
+    },
+    "quote": {
+      "displayName": "Quote",
+      "testTypes": ["functional", "css"]
+    },
+    "reading-time": {
+      "displayName": "Reading Time",
+      "testTypes": ["functional"]
+    },
+    "review": {
+      "displayName": "Review",
+      "testTypes": ["functional", "css", "interaction"]
+    },
+    "table": {
+      "displayName": "Table",
+      "testTypes": ["functional", "css"]
+    },
+    "tabs": {
+      "displayName": "Tabs",
+      "testTypes": ["functional", "css", "interaction"]
+    },
+    "text": {
+      "displayName": "Text",
+      "testTypes": ["functional", "css"]
+    },
+    "timeline": {
+      "displayName": "Timeline",
+      "testTypes": ["functional", "css"]
+    },
+    "video": {
+      "displayName": "Video",
+      "testTypes": ["functional", "css", "interaction"]
+    },
+    "zpattern": {
+      "displayName": "Z-Pattern",
+      "testTypes": ["functional", "css"]
+    }
+  },
+  "features": {
+    "commerce": {
+      "displayName": "Commerce",
+      "structure": "flat",
+      "testTypes": ["functional", "interaction"]
+    },
+    "feds": {
+      "displayName": "Federal",
+      "structure": "nested",
+      "subtypes": {
+        "header": {
+          "displayName": "Header",
+          "testTypes": ["functional", "css", "interaction"]
+        },
+        "footer": {
+          "displayName": "Footer",
+          "testTypes": ["functional", "css", "interaction"]
+        },
+        "login": {
+          "displayName": "Login",
+          "testTypes": ["functional", "interaction"]
+        }
+      }
+    },
+    "georouting": {
+      "displayName": "Geo Routing",
+      "structure": "flat",
+      "testTypes": ["functional", "interaction"]
+    },
+    "imslogin": {
+      "displayName": "IMS Login",
+      "structure": "flat",
+      "testTypes": ["functional", "interaction"]
+    },
+    "mas": {
+      "displayName": "Merch at Scale",
+      "structure": "nested",
+      "subtypes": {
+        "acom": {
+          "displayName": "ACOM",
+          "subtypes": {
+            "plans": {
+              "displayName": "Plans",
+              "testTypes": ["functional", "css", "interaction", "docs"]
+            }
+          }
+        },
+        "adobehome": {
+          "displayName": "Adobe Home",
+          "testTypes": ["functional", "css", "interaction"]
+        },
+        "benchmark": {
+          "displayName": "Benchmark",
+          "testTypes": ["functional", "performance"]
+        },
+        "ccd": {
+          "displayName": "CCD",
+          "subtypes": {
+            "mini": {
+              "displayName": "Mini",
+              "testTypes": ["functional", "css", "interaction"]
+            }
+          },
+          "testTypes": ["functional", "css", "interaction"]
+        },
+        "commerce": {
+          "displayName": "Commerce",
+          "testTypes": ["functional", "interaction"]
+        },
+        "docs": {
+          "displayName": "Documentation",
+          "testTypes": ["docs"]
+        },
+        "express": {
+          "displayName": "Express",
+          "testTypes": ["functional", "css", "interaction"]
+        }
+      }
+    },
+    "osttools": {
+      "displayName": "OST Tools",
+      "structure": "flat",
+      "testTypes": ["functional", "interaction"]
+    },
+    "personalization": {
+      "displayName": "Personalization",
+      "structure": "mixed",
+      "testTypes": ["functional", "interaction"],
+      "files": [
+        "all-elements",
+        "allowhtml",
+        "any-marquee-section",
+        "fragment-autoload",
+        "mep-actions",
+        "mep-button",
+        "mep-order",
+        "nested-placeholders",
+        "personalization",
+        "ul-ol-li",
+        "update-attribute-prepend"
+      ]
+    },
+    "promotions": {
+      "displayName": "Promotions",
+      "structure": "flat",
+      "testTypes": ["functional", "css", "interaction"]
+    }
+  }
+}

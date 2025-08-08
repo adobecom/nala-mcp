@@ -91,7 +91,7 @@ ${this.generateSelectorProperties(selectors)}
    */
   formatCSSProperties(cssProps) {
     const formatted = JSON.stringify(cssProps, null, 12);
-    return formatted.replace(/"/g, "'");
+    return formatted.replace(/"/g, '\'');
   }
 
   /**

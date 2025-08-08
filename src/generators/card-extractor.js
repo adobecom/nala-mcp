@@ -43,11 +43,19 @@ export class CardExtractor {
                 'h2[slot="heading-m"]',
                 'h4[slot="heading-m"]',
                 'p[slot="heading-xs"]',
+                // Express specific
+                'h1[slot="heading-xs"]',
+                'h1[slot="heading-s"]',
+                'h1[slot="heading-m"]',
             ],
             eyebrow: [
                 'h4[slot="detail-s"]',
                 'h5[slot="detail-s"]',
                 'p[slot="detail-s"]',
+                // Express specific
+                'h6[slot="detail-s"]',
+                'span[slot="detail-s"]',
+                'p[slot="eyebrow"]',
             ],
             description: [
                 'div[slot="body-xs"] p',
@@ -61,6 +69,10 @@ export class CardExtractor {
                 'span[slot="price"]',
                 'div[slot="price"]',
                 'p[slot="heading-m"] span[data-template="price"]',
+                // Express specific
+                'span[is="inline-price"]',
+                'p[slot="price"] span[is="inline-price"]',
+                'div[slot="price"] span[is="inline-price"]',
             ],
             strikethroughPrice: [
                 '.price-strikethrough',
@@ -73,6 +85,10 @@ export class CardExtractor {
                 'div[slot="footer"] > button',
                 'div[slot="cta"] > a[is="checkout-link"]',
                 'button[is="checkout-button"]',
+                // Express specific
+                'a[slot="cta"]',
+                'a.spectrum-Button',
+                'a[href*="express.adobe.com"]',
             ],
             icon: ['merch-icon[slot="icons"]', 'merch-icon'],
             image: ['div[slot="image"] img', 'img[slot="image"]'],
@@ -146,6 +162,8 @@ export class CardExtractor {
             product: 'h3[slot="heading-l"]',
             'mini-compare-chart': 'h4[slot="heading-m"]',
             segment: 'h3[slot="heading-s"]',
+            // Express card types
+            'simplified-pricing-express': 'h3[slot="heading-s"]',
         };
 
         // Build selectors for each variant

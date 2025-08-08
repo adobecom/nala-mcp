@@ -94,6 +94,11 @@
       "label": "Promoted Plans",
       "value": "promoted-plans",
       "surface": "adobe-home"
+    },
+    {
+      "label": "Simplified Pricing Express",
+      "value": "simplified-pricing-express",
+      "surface": "express"
     }
   ]
 } 

@@ -450,35 +450,35 @@ export async function runCompleteTestSuite(cardType, testType, options = {}) {
  * @returns {string} Formatted report
  */
 export function generateTestReport(result) {
-    let report = `\n📊 **Test Execution Report**\n\n`;
+    let report = '\n📊 **Test Execution Report**\n\n';
 
     report += `**Overall Result**: ${result.success ? '✅ PASSED' : '❌ FAILED'}\n`;
     report += `**Duration**: ${result.duration}ms\n`;
     report += `**Phase**: ${result.phase}\n\n`;
 
     if (result.validation) {
-        report += `## File Validation\n\n`;
+        report += '## File Validation\n\n';
         report += `**Status**: ${result.validation.valid ? '✅ Valid' : '❌ Invalid'}\n`;
 
         if (result.validation.errors.length > 0) {
-            report += `**Errors**:\n`;
+            report += '**Errors**:\n';
             result.validation.errors.forEach((error) => {
                 report += `- ${error}\n`;
             });
         }
 
         if (result.validation.warnings.length > 0) {
-            report += `**Warnings**:\n`;
+            report += '**Warnings**:\n';
             result.validation.warnings.forEach((warning) => {
                 report += `- ${warning}\n`;
             });
         }
 
-        report += `\n`;
+        report += '\n';
     }
 
     if (result.execution) {
-        report += `## Test Execution\n\n`;
+        report += '## Test Execution\n\n';
         report += `**Status**: ${result.execution.success ? '✅ Passed' : '❌ Failed'}\n`;
         report += `**Duration**: ${result.execution.duration}ms\n`;
 
@@ -487,7 +487,7 @@ export function generateTestReport(result) {
         }
 
         if (result.execution.warnings.length > 0) {
-            report += `**Warnings**:\n`;
+            report += '**Warnings**:\n';
             result.execution.warnings.forEach((warning) => {
                 report += `- ${warning}\n`;
             });

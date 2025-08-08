@@ -160,6 +160,7 @@ export class LiveCardExtractor {
                     if (cardClasses.includes('special-offers') || cardVariant.includes('special-offers')) return 'special-offers';
                     if (cardClasses.includes('suggested') || cardVariant.includes('suggested')) return 'suggested';
                     if (cardClasses.includes('slice') || cardVariant.includes('slice')) return 'slice';
+                    if (cardClasses.includes('express') || cardVariant.includes('express')) return 'simplified-pricing-express';
                     
                     const hasPrice = cardElement.querySelector('[slot="price"]');
                     const hasIcon = cardElement.querySelector('merch-icon');
@@ -241,7 +242,11 @@ export class LiveCardExtractor {
                         '[slot="heading-s"]',
                         '[slot="heading-m"]',
                         '[slot="heading-l"]',
-                        '[slot="heading-xl"]'
+                        '[slot="heading-xl"]',
+                        // Express specific
+                        'h1[slot="heading-xs"]',
+                        'h1[slot="heading-m"]',
+                        'h3[slot="heading-s"]'
                     ],
                     description: [
                         'div[slot="body-s"]',
@@ -256,12 +261,20 @@ export class LiveCardExtractor {
                         'p[slot="price"] span[is="inline-price"]',
                         '[slot="price"] span[is="inline-price"]',
                         'span[is="inline-price"]',
-                        '[slot="price"]'
+                        '[slot="price"]',
+                        // Express specific
+                        'p[slot="price"]',
+                        'div[slot="price"]',
+                        'span[slot="price"]'
                     ],
                     cta: [
                         '[slot="cta"] a.spectrum-Button',
                         '[slot="cta"] a',
-                        '[slot="cta"]'
+                        '[slot="cta"]',
+                        // Express specific
+                        'a[slot="cta"]',
+                        'a.spectrum-Button',
+                        'a[href*="express.adobe.com"]'
                     ],
                     icon: ['merch-icon'],
                     trialBadge: [

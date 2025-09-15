@@ -7,7 +7,7 @@ import { PageObjectGenerator } from './generators/page-object-generator.js';
 import { SpecGenerator } from './generators/spec-generator.js';
 import { TestGenerator } from './generators/test-generator.js';
 import { CardExtractor } from './generators/card-extractor.js';
-import { getSimplifiedCardTypes } from './utils/variant-reader.js';
+import { initializeRegistry, isValidVariant, getAllVariantNames } from './utils/variant-registry.js';
 import {
   saveCompleteTestSuite,
   getFileSaveSummary,
@@ -30,11 +30,21 @@ import { runNALATestWithFixes } from './nala-test-runner.js';
  * @typedef {import('./types.js').TestType} TestType
  */
 
-// Get card types dynamically from the source
-const dynamicCardTypes = getSimplifiedCardTypes();
+// Initialize variant registry on startup
+let variantRegistry = null;
+
+// Initialize registry and get card types
+async function getCardTypes() {
+    if (!variantRegistry) {
+        variantRegistry = await initializeRegistry();
+    }
+    return getAllVariantNames();
+}
 
 const CardConfigSchema = z.object({
-  cardType: z.enum(dynamicCardTypes),
+  cardType: z.string().refine(val => isValidVariant(val), {
+    message: 'Invalid card type'
+  }),
   cardId: z.string(),
   testSuite: z.string(),
   elements: z.object({
@@ -235,6 +245,21 @@ const pageObjectGenerator = new PageObjectGenerator();
 const specGenerator = new SpecGenerator();
 const testGenerator = new TestGenerator();
 const cardExtractor = new CardExtractor();
+
+// Initialize variant registry on server start
+let registryInitialized = false;
+(async () => {
+  await initializeRegistry();
+  registryInitialized = true;
+})();
+
+// Ensure registry is initialized before each operation
+async function ensureRegistryInitialized() {
+  if (!registryInitialized) {
+    await initializeRegistry();
+    registryInitialized = true;
+  }
+}
 
 server.tool(
   'generate-page-object',
@@ -1157,7 +1182,9 @@ server.tool(
   'validate-generated-tests',
   'Validate generated NALA test files for syntax and structure',
   {
-    cardType: z.enum(dynamicCardTypes).describe('Type of card to validate'),
+    cardType: z.string().refine(val => isValidVariant(val), {
+      message: 'Invalid card type'
+    }).describe('Type of card to validate'),
     testType: z
       .enum(['css', 'edit', 'save', 'discard'])
       .describe('Type of test to validate'),
@@ -1230,7 +1257,9 @@ server.tool(
   'run-generated-tests',
   'Execute generated NALA tests and report results',
   {
-    cardType: z.enum(dynamicCardTypes).describe('Type of card to test'),
+    cardType: z.string().refine(val => isValidVariant(val), {
+      message: 'Invalid card type'
+    }).describe('Type of card to test'),
     testType: z
       .enum(['css', 'edit', 'save', 'discard'])
       .describe('Type of test to run'),
@@ -1341,7 +1370,9 @@ server.tool(
       .enum(['css', 'edit', 'save', 'discard'])
       .describe('Type of test to generate and run'),
     cardId: z.string().describe('The ID of the merch card'),
-    cardType: z.enum(dynamicCardTypes).describe('Type of card'),
+    cardType: z.string().refine(val => isValidVariant(val), {
+      message: 'Invalid card type'
+    }).describe('Type of card'),
     branch: z.string().optional().describe('Branch name (defaults to \'main\')'),
     milolibs: z
       .string()
@@ -1505,7 +1536,9 @@ server.tool(
   'Run tests for a specific card and automatically fix any errors found',
   {
     cardId: z.string().describe('The ID of the merch card to test'),
-    cardType: z.enum(dynamicCardTypes).describe('Type of card'),
+    cardType: z.string().refine(val => isValidVariant(val), {
+      message: 'Invalid card type'
+    }).describe('Type of card'),
     testType: z
       .enum(['css', 'edit', 'save', 'discard'])
       .describe('Type of test to run'),
@@ -2021,7 +2054,9 @@ server.tool(
     testTag: z
       .string()
       .describe('NALA test tag (e.g., @studio-fries-css-card)'),
-    cardType: z.enum(dynamicCardTypes).describe('Type of card'),
+    cardType: z.string().refine(val => isValidVariant(val), {
+      message: 'Invalid card type'
+    }).describe('Type of card'),
     cardId: z.string().describe('The ID of the merch card'),
     branch: z.string().optional().describe('Branch name (defaults to \'local\')'),
     mode: z

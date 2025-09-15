@@ -168,6 +168,34 @@ nala/features/[feature]/[subfeature]/
 
 This approach ensures tests use actual selectors from the live card rather than generic placeholders.
 
+## Dynamic Variant Support
+
+The NALA MCP now automatically works with ANY new variant created in your MAS project:
+
+### How It Works
+1. **Automatic Discovery**: When you request tests for a new variant, the tool automatically:
+   - Checks if the variant file exists in `web-components/src/variants/`
+   - Auto-registers it silently if found
+   - Detects the appropriate surface based on naming patterns
+
+2. **No Manual Steps Required**: Just create your variant in MAS and immediately use NALA MCP to generate tests
+
+3. **Smart Surface Detection**:
+   - `ccd-*` variants → ccd surface
+   - `ah-*` variants → adobe-home surface
+   - `commerce-*` variants → commerce surface
+   - Default → acom surface
+
+### Example Workflow
+```bash
+# 1. Create new variant in MAS: web-components/src/variants/my-new-card.js
+
+# 2. Immediately generate tests (no manual registration needed!)
+node nala-cli.js single css "card-id" my-new-card main
+
+# The tool will automatically discover and register the variant
+```
+
 ## Important Notes
 
 - The project integrates with MAS repository structure and expects specific paths
@@ -176,3 +204,4 @@ This approach ensures tests use actual selectors from the live card rather than 
 - Authentication via IMS_EMAIL and IMS_PASS environment variables is required for test execution
 - The `.nala-mcp.json` configuration file in target projects defines paths and import mappings
 - The CLI tool was renamed from `cursor-integration.js` to `nala-cli.js` for tool-agnostic naming
+- New variants are automatically discovered when used - no manual registration required

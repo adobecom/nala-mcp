@@ -38,6 +38,9 @@ The NALA MCP automatically generates Playwright tests for Merch at Scale card co
 - **Complete test generation and execution workflow**
 - **Localhost testing support**
 - **Background execution with headless mode by default**
+- **Dynamic variant discovery from MAS project**
+- **Custom variant registration with surface mapping**
+- **Pattern-based surface detection rules**
 
 ## Installation
 
@@ -64,6 +67,25 @@ export IMS_PASS=<your-adobe-test-password>
 - When using MCP tools, ensure the MCP server process has access to these environment variables
 
 ## Quick Setup
+
+### Dynamic Variant Support
+
+NALA MCP now supports dynamic variant discovery and custom variant registration:
+
+1. **Automatic Discovery**: The tool automatically discovers variants from your MAS project's `web-components/src/variants/` directory
+2. **Custom Variants**: Register new variants without modifying the tool's source code
+3. **Surface Detection**: Intelligent surface detection based on patterns and naming conventions
+
+```bash
+# Discover variants from your MAS project
+node nala-cli.js discover-variants
+
+# Add a custom variant
+node nala-cli.js add-variant my-custom-card acom
+
+# List all registered variants
+node nala-cli.js list-variants
+```
 
 ### 1. Install Dependencies
 
@@ -181,6 +203,21 @@ Create `.nala-mcp.json` in your NALA-MCP directory:
     "webUtil": "../../../libs/webutil.js",
     "editorPage": "../../../editor.page.js",
     "ostPage": "../../../ost.page.js"
+  },
+  "variants": {
+    "custom-card": {
+      "label": "Custom Card",
+      "surface": "acom",
+      "testTypes": ["css", "functional"]
+    }
+  },
+  "surfaceRules": {
+    "patterns": {
+      "ccd-*": "ccd",
+      "ah-*": "adobe-home",
+      "commerce-*": "commerce"
+    },
+    "default": "acom"
   }
 }
 ```
@@ -219,8 +256,17 @@ Update your Cursor settings to include the NALA-MCP server:
 
 | Command      | Description               | Example                                           |
 | ------------ | ------------------------- | ------------------------------------------------- |
-| `list-types` | Show available card types | `node cursor-integration.js list-types`           |
-| `show-paths` | Preview file locations    | `node cursor-integration.js show-paths fries css` |
+| `list-types` | Show available card types | `node nala-cli.js list-types`           |
+| `show-paths` | Preview file locations    | `node nala-cli.js show-paths fries css` |
+
+### Variant Management Commands
+
+| Command             | Description                      | Example                                    |
+| ------------------- | -------------------------------- | ------------------------------------------ |
+| `add-variant`       | Register a new variant           | `node nala-cli.js add-variant my-card acom` |
+| `remove-variant`    | Remove a variant                 | `node nala-cli.js remove-variant my-card`   |
+| `list-variants`     | List all registered variants     | `node nala-cli.js list-variants`           |
+| `discover-variants` | Auto-discover from MAS project   | `node nala-cli.js discover-variants`       |
 
 ## Card Types & Surfaces
 
@@ -232,15 +278,22 @@ Update your Cursor settings to include the NALA-MCP server:
 | **acom**       | catalog, plans, plans-education, plans-students, special-offers |
 | **ccd**        | suggested, slice                                                |
 | **adobe-home** | promoted-plans, try-buy-widget                                  |
+| **custom**     | Any dynamically registered variants                             |
 
 ### Card Type to Surface Mapping
 
-The MCP server automatically maps card types to surfaces:
+The MCP server automatically maps card types to surfaces using:
 
-- **Commerce Surface**: fries
-- **ACOM Surface**: catalog, plans, plans-education, plans-students, special-offers
-- **CCD Surface**: suggested, slice
-- **Adobe Home Surface**: promoted-plans, try-buy-widget
+1. **Pattern Matching**: Configure patterns in `.nala-mcp.json`:
+   - `ccd-*` → ccd surface
+   - `ah-*` → adobe-home surface
+   - `commerce-*` → commerce surface
+
+2. **Legacy Mappings**: Built-in mappings for backward compatibility
+
+3. **Custom Registration**: Explicitly set surface when adding variants
+
+4. **Auto-Discovery**: Detects surface from variant location in MAS project
 
 ## Test Types
 

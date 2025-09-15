@@ -1,6 +1,7 @@
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { getCardTypeMetadata } from './variant-reader.js';
+import { detectSurface as detectVariantSurface, getVariant } from './variant-registry.js';
 import { getTargetProjectRoot, getTestOutputPath, getProjectType } from '../config.js';
 
 /**
@@ -9,9 +10,20 @@ import { getTargetProjectRoot, getTestOutputPath, getProjectType } from '../conf
  * @returns {string} The surface (commerce, ccd, acom, adobe-home)
  */
 export function getCardSurface(cardType) {
+    // First try to get from registry (which includes dynamic variants)
+    const variant = getVariant(cardType);
+    if (variant && variant.surface) {
+        return variant.surface;
+    }
+
+    // Use the new surface detection logic
+    const detectedSurface = detectVariantSurface(cardType);
+    if (detectedSurface) {
+        return detectedSurface;
+    }
+
+    // Legacy: try metadata from variant-reader
     const metadata = getCardTypeMetadata();
-    
-    // Find metadata for this card type (try both simplified and full names)
     const meta = metadata.find(
         (m) =>
             m.value === cardType ||
@@ -19,11 +31,11 @@ export function getCardSurface(cardType) {
             m.value === `ccd-${cardType}` ||
             m.value === `ah-${cardType}`,
     );
-    
+
     if (meta) {
         return meta.surface;
     }
-    
+
     // Fallback mapping for common types
     const surfaceMapping = {
         suggested: 'ccd',
@@ -37,7 +49,7 @@ export function getCardSurface(cardType) {
         'promoted-plans': 'adobe-home',
         'try-buy-widget': 'adobe-home',
     };
-    
+
     return surfaceMapping[cardType] || 'acom';
 }
 

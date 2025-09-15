@@ -15,6 +15,15 @@ import {
     getSimplifiedCardTypes,
     getCardTypeMetadata,
 } from './src/utils/variant-reader.js';
+import {
+    initializeRegistry,
+    registerVariant,
+    removeVariant,
+    getAllVariantNames,
+    getAllVariants,
+    discoverProjectVariants,
+    saveVariantsToConfig,
+} from './src/utils/variant-registry.js';
 import { getFileSaveSummary, getCardSurface } from './src/utils/file-output.js';
 import { loadConfig, addProject, getProjectType } from './src/config.js';
 import { generateMiloTests } from './src/generators/milo-generator.js';
@@ -271,6 +280,26 @@ async function main() {
             case 'list-types':
                 listCardTypes();
                 break;
+            case 'add-variant':
+                if (args.length < 3) {
+                    console.error('Usage: add-variant <name> <surface>');
+                    process.exit(1);
+                }
+                await addVariantCommand(args[1], args[2]);
+                break;
+            case 'remove-variant':
+                if (args.length < 2) {
+                    console.error('Usage: remove-variant <name>');
+                    process.exit(1);
+                }
+                await removeVariantCommand(args[1]);
+                break;
+            case 'list-variants':
+                await listVariantsCommand();
+                break;
+            case 'discover-variants':
+                await discoverVariantsCommand();
+                break;
             case 'show-paths':
                 if (args.length < 3) {
                     console.error('Usage: show-paths <cardType> <testType>');
@@ -482,6 +511,12 @@ MAS Test Generation Commands:
   single <testType> <cardId> [cardType] [branch]  Generate tests for specific type
   list-types                          List all available card types from source
   show-paths <cardType> <testType>    Show where files will be saved in NALA structure
+
+Variant Management Commands:
+  add-variant <name> <surface>       Register a new variant
+  remove-variant <name>              Remove a variant from registry
+  list-variants                      List all registered variants
+  discover-variants                  Auto-discover variants from MAS project
   validate <cardType> <testType>      Validate generated test files for syntax and structure
   run-tests <cardType> <testType> [headless] [browser] [timeout] [dryRun]  Execute generated tests
   generate-and-test <testType> <cardId> <cardType> [branch] [options]  Complete workflow: generate, validate, and test
@@ -628,6 +663,70 @@ function showFilePaths(cardType, testType) {
     console.log(
         `node nala-cli.js single ${testType} <cardId> ${cardType} [branch]`,
     );
+}
+
+/**
+ * Add a new variant
+ */
+async function addVariantCommand(name, surface) {
+    await initializeRegistry();
+
+    registerVariant(name, {
+        surface: surface,
+        label: name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    });
+
+    await saveVariantsToConfig();
+    console.log(`✅ Variant '${name}' added with surface '${surface}'`);
+}
+
+/**
+ * Remove a variant
+ */
+async function removeVariantCommand(name) {
+    await initializeRegistry();
+
+    removeVariant(name);
+    await saveVariantsToConfig();
+    console.log(`✅ Variant '${name}' removed`);
+}
+
+/**
+ * List all variants
+ */
+async function listVariantsCommand() {
+    await initializeRegistry();
+
+    const variants = getAllVariants();
+    console.log('\n📋 **Registered Variants**\n');
+
+    variants.forEach(variant => {
+        const source = variant.isDefault ? 'default' :
+                       variant.isCustom ? 'custom' :
+                       variant.isDiscovered ? 'discovered' : 'dynamic';
+        console.log(`• ${variant.value.padEnd(25)} - ${variant.label} (${variant.surface}) [${source}]`);
+    });
+
+    console.log(`\nTotal: ${variants.length} variants`);
+}
+
+/**
+ * Discover variants from project
+ */
+async function discoverVariantsCommand() {
+    await initializeRegistry();
+
+    console.log('🔍 Discovering variants from MAS project...');
+    await discoverProjectVariants();
+    await saveVariantsToConfig();
+
+    const variants = getAllVariants();
+    const discovered = variants.filter(v => v.isDiscovered);
+
+    console.log(`✅ Discovered ${discovered.length} new variants`);
+    discovered.forEach(variant => {
+        console.log(`  • ${variant.value} (${variant.surface})`);
+    });
 }
 
 // Run the main function

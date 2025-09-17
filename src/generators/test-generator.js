@@ -4,6 +4,7 @@
  */
 
 import { getImportPaths } from '../config.js';
+import { WaitHelpers } from '../utils/wait-helpers.js';
 
 export class TestGenerator {
   /**
@@ -185,6 +186,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Validate ${config.cardType} card CSS', async () => {
@@ -264,16 +267,20 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
-            await expect(await studio.getCard(data.cardid)).toBeVisible();
-            await expect(await studio.getCard(data.cardid)).toHaveAttribute(
+            const card = await studio.getCard(data.cardid);
+            await expect(card).toBeVisible();
+            await expect(card).toHaveAttribute(
                 'variant',
                 'ccd-${config.cardType}',
             );
-            await (await studio.getCard(data.cardid)).dblclick();
-            await expect(await editor.panel).toBeVisible();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
+            await card.dblclick();
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit title field', async () => {
@@ -314,16 +321,20 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
-            await expect(await studio.getCard(data.cardid)).toBeVisible();
-            await expect(await studio.getCard(data.cardid)).toHaveAttribute(
+            const card = await studio.getCard(data.cardid);
+            await expect(card).toBeVisible();
+            await expect(card).toHaveAttribute(
                 'variant',
                 'ccd-${config.cardType}',
             );
-            await (await studio.getCard(data.cardid)).dblclick();
-            await expect(await editor.panel).toBeVisible();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
+            await card.dblclick();
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit eyebrow field', async () => {
@@ -366,16 +377,20 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
-            await expect(await studio.getCard(data.cardid)).toBeVisible();
-            await expect(await studio.getCard(data.cardid)).toHaveAttribute(
+            const card = await studio.getCard(data.cardid);
+            await expect(card).toBeVisible();
+            await expect(card).toHaveAttribute(
                 'variant',
                 'ccd-${config.cardType}',
             );
-            await (await studio.getCard(data.cardid)).dblclick();
-            await expect(await editor.panel).toBeVisible();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
+            await card.dblclick();
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit description field', async () => {
@@ -422,16 +437,20 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
-            await expect(await studio.getCard(data.cardid)).toBeVisible();
-            await expect(await studio.getCard(data.cardid)).toHaveAttribute(
+            const card = await studio.getCard(data.cardid);
+            await expect(card).toBeVisible();
+            await expect(card).toHaveAttribute(
                 'variant',
                 'ccd-${config.cardType}',
             );
-            await (await studio.getCard(data.cardid)).dblclick();
-            await expect(await editor.panel).toBeVisible();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
+            await card.dblclick();
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit mnemonic URL field', async () => {
@@ -473,16 +492,20 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
-            await expect(await studio.getCard(data.cardid)).toBeVisible();
-            await expect(await studio.getCard(data.cardid)).toHaveAttribute(
+            const card = await studio.getCard(data.cardid);
+            await expect(card).toBeVisible();
+            await expect(card).toHaveAttribute(
                 'variant',
                 'ccd-${config.cardType}',
             );
-            await (await studio.getCard(data.cardid)).dblclick();
-            await expect(await editor.panel).toBeVisible();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
+            await card.dblclick();
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit background URL field', async () => {
@@ -528,16 +551,20 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
-            await expect(await studio.getCard(data.cardid)).toBeVisible();
-            await expect(await studio.getCard(data.cardid)).toHaveAttribute(
+            const card = await studio.getCard(data.cardid);
+            await expect(card).toBeVisible();
+            await expect(card).toHaveAttribute(
                 'variant',
                 'ccd-${config.cardType}',
             );
-            await (await studio.getCard(data.cardid)).dblclick();
-            await expect(await editor.panel).toBeVisible();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
+            await card.dblclick();
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit price field', async () => {
@@ -552,11 +579,15 @@ test.beforeEach(async ({ page, browserName }) => {
             );
 
             await (await editor.prices.locator(editor.regularPrice)).dblclick();
+            ${WaitHelpers.dialogWait('ost')}
             await expect(await ost.price).toBeVisible();
             await expect(await ost.priceUse).toBeVisible();
             await expect(await ost.unitCheckbox).toBeVisible();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
             await ost.unitCheckbox.click();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.ANIMATION});
             await ost.priceUse.click();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-4: Validate edited price in Editor panel', async () => {
@@ -599,16 +630,20 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
-            await expect(await studio.getCard(data.cardid)).toBeVisible();
-            await expect(await studio.getCard(data.cardid)).toHaveAttribute(
+            const card = await studio.getCard(data.cardid);
+            await expect(card).toBeVisible();
+            await expect(card).toHaveAttribute(
                 'variant',
                 'ccd-${config.cardType}',
             );
-            await (await studio.getCard(data.cardid)).dblclick();
-            await expect(await editor.panel).toBeVisible();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
+            await card.dblclick();
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit CTA label', async () => {
@@ -715,6 +750,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Clone card and open editor', async () => {
@@ -726,7 +763,7 @@ test.beforeEach(async ({ page, browserName }) => {
             data.clonedCardID = await clonedCardID;
             await expect(await clonedCard).toBeVisible();
             await clonedCard.dblclick();
-            await page.waitForTimeout(2000);
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit title and save card', async () => {
@@ -734,6 +771,8 @@ test.beforeEach(async ({ page, browserName }) => {
             await expect(await editor.title).toHaveValue(data.title);
             await editor.title.fill(data.newTitle);
             await studio.saveCard();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SAVE_OPERATION});
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
         });
 
         await test.step('step-4: Validate edited card title', async () => {
@@ -768,6 +807,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Clone card and open editor', async () => {
@@ -779,7 +820,7 @@ test.beforeEach(async ({ page, browserName }) => {
             data.clonedCardID = await clonedCardID;
             await expect(await clonedCard).toBeVisible();
             await clonedCard.dblclick();
-            await page.waitForTimeout(2000);
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit eyebrow and save card', async () => {
@@ -787,6 +828,8 @@ test.beforeEach(async ({ page, browserName }) => {
             await expect(await editor.subtitle).toHaveValue(data.subtitle);
             await editor.subtitle.fill(data.newSubtitle);
             await studio.saveCard();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SAVE_OPERATION});
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
         });
 
         await test.step('step-4: Validate edited card eyebrow', async () => {
@@ -821,6 +864,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Clone card and open editor', async () => {
@@ -832,7 +877,7 @@ test.beforeEach(async ({ page, browserName }) => {
             data.clonedCardID = await clonedCardID;
             await expect(await clonedCard).toBeVisible();
             await clonedCard.dblclick();
-            await page.waitForTimeout(2000);
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit description and save card', async () => {
@@ -842,6 +887,8 @@ test.beforeEach(async ({ page, browserName }) => {
             );
             await editor.description.fill(data.newDescription);
             await studio.saveCard();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SAVE_OPERATION});
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
         });
 
         await test.step('step-4: Validate edited card description', async () => {
@@ -878,6 +925,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Clone card and open editor', async () => {
@@ -889,7 +938,7 @@ test.beforeEach(async ({ page, browserName }) => {
             data.clonedCardID = await clonedCardID;
             await expect(await clonedCard).toBeVisible();
             await clonedCard.dblclick();
-            await page.waitForTimeout(2000);
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit mnemonic and save card', async () => {
@@ -897,6 +946,8 @@ test.beforeEach(async ({ page, browserName }) => {
             await expect(await editor.iconURL).toHaveValue(data.iconURL);
             await editor.iconURL.fill(data.newIconURL);
             await studio.saveCard();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SAVE_OPERATION});
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
         });
 
         await test.step('step-4: Validate edited card mnemonic', async () => {
@@ -929,6 +980,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Clone card and open editor', async () => {
@@ -940,7 +993,7 @@ test.beforeEach(async ({ page, browserName }) => {
             data.clonedCardID = await clonedCardID;
             await expect(await clonedCard).toBeVisible();
             await clonedCard.dblclick();
-            await page.waitForTimeout(2000);
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit fields and save card', async () => {
@@ -948,6 +1001,8 @@ test.beforeEach(async ({ page, browserName }) => {
             await expect(await editor.backgroundImage).toHaveValue('');
             await editor.backgroundImage.fill(data.newBackgroundURL);
             await studio.saveCard();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SAVE_OPERATION});
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
         });
 
         await test.step('step-4: Validate edited card image', async () => {
@@ -985,6 +1040,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Clone card and open editor', async () => {
@@ -996,7 +1053,7 @@ test.beforeEach(async ({ page, browserName }) => {
             data.clonedCardID = await clonedCardID;
             await expect(await clonedCard).toBeVisible();
             await clonedCard.dblclick();
-            await page.waitForTimeout(2000);
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit price and save card', async () => {
@@ -1006,6 +1063,8 @@ test.beforeEach(async ({ page, browserName }) => {
                 data.strikethroughPrice,
             );
             await studio.saveCard();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SAVE_OPERATION});
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
         });
 
         await test.step('step-4: Validate edited card price', async () => {
@@ -1043,6 +1102,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Clone card and open editor', async () => {
@@ -1054,7 +1115,7 @@ test.beforeEach(async ({ page, browserName }) => {
             data.clonedCardID = await clonedCardID;
             await expect(await clonedCard).toBeVisible();
             await clonedCard.dblclick();
-            await page.waitForTimeout(2000);
+            ${WaitHelpers.editorOpenWait()}
         });
 
         await test.step('step-3: Edit CTA and save card', async () => {
@@ -1064,6 +1125,8 @@ test.beforeEach(async ({ page, browserName }) => {
             await editor.linkText.fill(data.newCtaText);
             await editor.linkSave.click();
             await studio.saveCard();
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SAVE_OPERATION});
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
         });
 
         await test.step('step-4: Validate edited card CTA', async () => {
@@ -1143,6 +1206,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
@@ -1194,6 +1259,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
@@ -1245,6 +1312,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
@@ -1300,6 +1369,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
@@ -1352,6 +1423,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
@@ -1403,6 +1476,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
@@ -1457,6 +1532,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Open card editor', async () => {
@@ -1533,6 +1610,8 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
+            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
+            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
         await test.step('step-2: Perform ${interactionType} on ${elementName}', async () => {

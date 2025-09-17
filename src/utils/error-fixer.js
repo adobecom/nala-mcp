@@ -3,6 +3,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { getNALADirectoryPath, getCardSurface } from './file-output.js';
 import { getTargetProjectRoot, getTestOutputPath, getImportPaths } from '../config.js';
+import { WaitHelpers } from './wait-helpers.js';
 
 const currentDir = dirname(fileURLToPath(import.meta.url));
 const projectRoot = join(currentDir, '../../..');
@@ -166,6 +167,91 @@ test.describe('${cardType} ${testType} tests', () => {
                 );
             }
             return content;
+        },
+    },
+
+    // New patterns for robust error handling
+    elementNotFound: {
+        pattern: /Element not found: (.+)/,
+        fix: (content, match) => {
+            const selector = match[1];
+            // Add wait and retry logic for the selector
+            const waitCode = `
+        // Wait for element with retry
+        await page.waitForSelector('${selector}', {
+            state: 'visible',
+            timeout: ${WaitHelpers.TIMEOUTS.ELEMENT_READY}
+        });`;
+
+            // Find where the selector is used and add wait before it
+            const lines = content.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].includes(selector) && !lines[i].includes('waitForSelector')) {
+                    lines.splice(i, 0, waitCode);
+                    break;
+                }
+            }
+            return lines.join('\n');
+        },
+    },
+
+    timeoutError: {
+        pattern: /Timeout (\d+)ms exceeded/,
+        fix: (content, match) => {
+            const timeout = parseInt(match[1]);
+            // Increase timeouts in the test
+            let newContent = content.replace(
+                /timeout:\s*\d+/g,
+                `timeout: ${Math.min(timeout * 2, 30000)}`
+            );
+
+            // Add test.slow() if not present
+            if (!newContent.includes('test.slow()')) {
+                newContent = newContent.replace(
+                    /test\(`([^`]+)`, async \(/g,
+                    'test.slow();\n    test(`$1`, async ('
+                );
+            }
+            return newContent;
+        },
+    },
+
+    missingWait: {
+        pattern: /Expected element to be visible but it's not/,
+        fix: (content) => {
+            // Add comprehensive waits before visibility checks
+            return content.replace(
+                /await expect\(([^)]+)\)\.toBeVisible\(\)/g,
+                `await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
+        await expect($1).toBeVisible({ timeout: ${WaitHelpers.TIMEOUTS.ELEMENT_READY} })`
+            );
+        },
+    },
+
+    editorNotOpening: {
+        pattern: /Editor panel not visible/,
+        fix: (content) => {
+            // Add proper wait for editor opening
+            return content.replace(
+                /await \([^)]+\)\.dblclick\(\);/g,
+                `$&
+        ${WaitHelpers.editorOpenWait()}`
+            );
+        },
+    },
+
+    priceNotLoading: {
+        pattern: /Price element not found or empty/,
+        fix: (content) => {
+            // Add wait for dynamic price loading
+            return content.replace(
+                /await expect\(([^)]*price[^)]*)\)/g,
+                `await page.waitForFunction(() => {
+            const price = document.querySelector('[slot="price"]');
+            return price && price.textContent && !price.textContent.includes('...');
+        }, { timeout: ${WaitHelpers.TIMEOUTS.LONG} });
+        await expect($1)`
+            );
         },
     },
 };
@@ -481,6 +567,7 @@ export async function autoFixAllErrors(
     validationResult,
     options = {},
 ) {
+    const { maxRetries = 3, retryDelay = 1000 } = options;
     const allFixes = [];
     const allRemainingErrors = [];
     let overallSuccess = true;

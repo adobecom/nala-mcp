@@ -113,9 +113,51 @@ export class LiveCardExtractor {
                 await page.waitForTimeout(3000);
             }
 
-            // Wait for card to load
-            await page.waitForSelector('merch-card', { timeout: 20000 });
-            await page.waitForTimeout(3000);
+            // Wait for card to load with multiple strategies
+            const cardSelectors = [
+                'merch-card',
+                `aem-fragment[fragment-id="${cardId}"]`,
+                `aem-fragment[fragment="${cardId}"]`,
+                `merch-card[data-card-id="${cardId}"]`
+            ];
+
+            let cardFound = false;
+            for (const selector of cardSelectors) {
+                try {
+                    await page.waitForSelector(selector, { timeout: 5000 });
+                    cardFound = true;
+                    console.log(`Card found with selector: ${selector}`);
+                    break;
+                } catch (e) {
+                    // Try next selector
+                }
+            }
+
+            if (!cardFound) {
+                throw new Error('Card not found with any selector strategy');
+            }
+
+            // Wait for card content to fully load
+            await page.waitForLoadState('networkidle');
+            await page.waitForTimeout(2000);
+
+            // Wait for any dynamic content
+            await page.waitForFunction(() => {
+                const card = document.querySelector('merch-card');
+                if (!card) return false;
+
+                // Check if price is loaded (if present)
+                const price = card.querySelector('[slot="price"]');
+                if (price && price.textContent.includes('...')) return false;
+
+                // Check if images are loaded
+                const images = card.querySelectorAll('img');
+                for (const img of images) {
+                    if (!img.complete) return false;
+                }
+
+                return true;
+            }, { timeout: 10000 });
 
             // Extract actual CSS properties dynamically
             const extractedData = await page.evaluate((cardId) => {

@@ -4,6 +4,8 @@
  * @typedef {import('../types.js').CSSProperties} CSSProperties
  */
 
+import { WaitHelpers } from '../utils/wait-helpers.js';
+
 export class PageObjectGenerator {
   /**
    * @param {CardConfig} config
@@ -13,6 +15,7 @@ export class PageObjectGenerator {
     const className = this.generateClassName(config.cardType);
     const selectors = this.generateSelectors(config);
     const cssProperties = this.generateCSSProperties(config);
+    const robustSelectors = this.generateRobustSelectors(config);
 
     return `export default class ${className} {
     constructor(page) {
@@ -20,8 +23,45 @@ export class PageObjectGenerator {
 
 ${this.generateSelectorProperties(selectors)}
 
+        // Robust selector alternatives for fallback
+        this.selectorAlternatives = ${this.formatSelectorAlternatives(robustSelectors)};
+
         // ${config.cardType} card properties:
         this.cssProp = ${this.formatCSSProperties(cssProperties)};
+    }
+
+    /**
+     * Get element with fallback selectors
+     * @param {string} elementName - Name of the element
+     * @returns {Promise<import('@playwright/test').Locator>}
+     */
+    async getElementWithFallback(elementName) {
+        const alternatives = this.selectorAlternatives[elementName];
+        if (!alternatives || alternatives.length === 0) {
+            return this[elementName];
+        }
+
+        for (const selector of alternatives) {
+            const element = this.page.locator(selector);
+            const count = await element.count();
+            if (count > 0) {
+                return element.first();
+            }
+        }
+
+        // Fallback to original selector
+        return this[elementName];
+    }
+
+    /**
+     * Wait for element to be ready for interaction
+     * @param {import('@playwright/test').Locator} element
+     * @param {number} timeout
+     */
+    async waitForElement(element, timeout = 5000) {
+        await element.waitFor({ state: 'visible', timeout });
+        await element.waitFor({ state: 'attached', timeout: timeout / 2 });
+        return element;
     }
 }
 `;
@@ -91,6 +131,35 @@ ${this.generateSelectorProperties(selectors)}
    */
   formatCSSProperties(cssProps) {
     const formatted = JSON.stringify(cssProps, null, 12);
+    return formatted.replace(/"/g, '\'');
+  }
+
+  /**
+   * Generate robust selectors with alternatives
+   * @param {CardConfig} config
+   * @returns {Record<string, string[]>}
+   */
+  generateRobustSelectors(config) {
+    const robustSelectors = {};
+
+    Object.entries(config.elements).forEach(([elementName, elementConfig]) => {
+      if (elementConfig) {
+        const selectorName = this.camelCase(elementName);
+        const alternatives = WaitHelpers.selectorAlternatives(elementName, elementConfig.selector);
+        robustSelectors[selectorName] = alternatives;
+      }
+    });
+
+    return robustSelectors;
+  }
+
+  /**
+   * Format selector alternatives for page object
+   * @param {Record<string, string[]>} robustSelectors
+   * @returns {string}
+   */
+  formatSelectorAlternatives(robustSelectors) {
+    const formatted = JSON.stringify(robustSelectors, null, 12);
     return formatted.replace(/"/g, '\'');
   }
 

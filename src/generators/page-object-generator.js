@@ -5,13 +5,22 @@
  */
 
 import { WaitHelpers } from '../utils/wait-helpers.js';
+import { SmartLocatorGenerator } from './smart-locator-generator.js';
 
 export class PageObjectGenerator {
+  constructor() {
+    this.smartLocatorGenerator = new SmartLocatorGenerator();
+  }
   /**
    * @param {CardConfig} config
+   * @param {Object} options - Generation options
    * @returns {string}
    */
-  generatePageObject(config) {
+  generatePageObject(config, options = {}) {
+    if (options.useSmartSelectors && config.metadata?.playwrightMCP) {
+      return this.generateSmartPageObject(config, options);
+    }
+
     const className = this.generateClassName(config.cardType);
     const selectors = this.generateSelectors(config);
     const cssProperties = this.generateCSSProperties(config);
@@ -161,6 +170,20 @@ ${this.generateSelectorProperties(selectors)}
   formatSelectorAlternatives(robustSelectors) {
     const formatted = JSON.stringify(robustSelectors, null, 12);
     return formatted.replace(/"/g, '\'');
+  }
+
+  /**
+   * Generate smart page object using SmartLocatorGenerator
+   * @param {CardConfig} config - Card configuration
+   * @param {Object} options - Generation options
+   * @returns {string} Smart page object code
+   */
+  generateSmartPageObject(config, options = {}) {
+    return this.smartLocatorGenerator.generatePageObject(
+      config.cardType,
+      config.elements,
+      options
+    );
   }
 
   /**

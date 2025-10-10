@@ -7,7 +7,9 @@ import { PageObjectGenerator } from './generators/page-object-generator.js';
 import { SpecGenerator } from './generators/spec-generator.js';
 import { TestGenerator } from './generators/test-generator.js';
 import { CardExtractor } from './generators/card-extractor.js';
-import { initializeRegistry, isValidVariant, getAllVariantNames } from './utils/variant-registry.js';
+import { SnapshotAnalyzer } from './integrations/snapshot-analyzer.js';
+import { SmartLocatorGenerator } from './generators/smart-locator-generator.js';
+import { initializeRegistry, isValidVariant } from './utils/variant-registry.js';
 import {
   saveCompleteTestSuite,
   getFileSaveSummary,
@@ -29,17 +31,6 @@ import { runNALATestWithFixes } from './nala-test-runner.js';
  * @typedef {import('./types.js').CardConfig} CardConfig
  * @typedef {import('./types.js').TestType} TestType
  */
-
-// Initialize variant registry on startup
-let variantRegistry = null;
-
-// Initialize registry and get card types
-async function getCardTypes() {
-    if (!variantRegistry) {
-        variantRegistry = await initializeRegistry();
-    }
-    return getAllVariantNames();
-}
 
 const CardConfigSchema = z.object({
   cardType: z.string().refine(val => isValidVariant(val), {
@@ -247,19 +238,9 @@ const testGenerator = new TestGenerator();
 const cardExtractor = new CardExtractor();
 
 // Initialize variant registry on server start
-let registryInitialized = false;
 (async () => {
   await initializeRegistry();
-  registryInitialized = true;
 })();
-
-// Ensure registry is initialized before each operation
-async function ensureRegistryInitialized() {
-  if (!registryInitialized) {
-    await initializeRegistry();
-    registryInitialized = true;
-  }
-}
 
 server.tool(
   'generate-page-object',
@@ -851,7 +832,6 @@ server.tool(
     try {
       const { chromium } = await import('playwright');
 
-      const options = { path, browserParams, milolibs };
       const baseUrl = cardExtractor.buildBaseUrl(branch, milolibs);
       const finalPath = path || '/studio.html';
       const finalBrowserParams = browserParams || '#query=';
@@ -2331,6 +2311,129 @@ server.tool(
 );
 
 server.tool(
+  'create-element-extraction-script',
+  'Generate JavaScript extraction script for Claude to run via Playwright MCP browser_evaluate',
+  {
+    cardId: z.string().describe('The ID of the merch card to extract properties from'),
+  },
+  async ({ cardId }) => {
+    try {
+      const analyzer = new SnapshotAnalyzer();
+      const script = analyzer.generateExtractionScript(cardId);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `# Element Extraction Script for Card ${cardId}\n\nThis script should be run via Playwright MCP's \`browser_evaluate\` tool after navigating to the card page.\n\n## Usage with Playwright MCP\n\n1. Use \`browser_navigate\` to go to the card URL\n2. Wait for the page to load\n3. Use \`browser_evaluate\` with this script:\n\n\`\`\`javascript\n${script}\n\`\`\`\n\nThe script will return a JSON object containing:\n- cardType: The variant type of the card\n- cardId: The card identifier\n- elements: Object with selectors for each element (title, eyebrow, description, etc.)\n- cssProperties: Computed CSS properties for validation`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error generating extraction script: ${error.message}`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+server.tool(
+  'analyze-browser-snapshot',
+  'Analyze browser snapshot data from Playwright MCP and generate smart selector configuration',
+  {
+    snapshot: z.any().optional().describe('Browser snapshot from Playwright MCP browser_snapshot tool'),
+    elementData: z.object({
+      cardType: z.string(),
+      cardId: z.string(),
+      elements: z.record(z.any()),
+      cssProperties: z.record(z.any()).optional(),
+    }).describe('Element data from browser_evaluate using extraction script'),
+    cardId: z.string().describe('The ID of the merch card'),
+    testTypes: z.array(z.enum(['css', 'functional', 'edit', 'save', 'discard', 'interaction'])).optional().describe('Types of tests to generate (default: [\'css\', \'functional\'])'),
+  },
+  async ({ snapshot, elementData, cardId, testTypes = ['css', 'functional'] }) => {
+    try {
+      const analyzer = new SnapshotAnalyzer();
+
+      const cardConfig = analyzer.analyzeSnapshotData({
+        snapshot,
+        elementData,
+        cardId,
+        options: { testTypes }
+      });
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `# Smart Selector Analysis for Card ${cardId}\n\n**Card Type**: ${cardConfig.cardType}\n**Confidence**: Smart selectors with fallback chains\n**Extraction Method**: ${cardConfig.metadata.extractionMethod}\n\n## Generated Configuration\n\n\`\`\`json\n${JSON.stringify(cardConfig, null, 2)}\n\`\`\`\n\n## Element Confidence Scores\n\n${Object.entries(cardConfig.elements).map(([name, elem]) =>
+  `- **${name}**: ${elem.metadata?.confidence || 0}% confidence, ${elem.fallbackSelectors?.length || 0} fallback selectors`
+).join('\n')}\n\n## Next Steps\n\nUse this configuration with:\n1. \`generate-smart-page-object\` to create page objects with .or() chains\n2. \`generate-test-spec\` to create test specifications\n3. \`generate-test-implementation\` to create test files`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error analyzing snapshot: ${error.message}`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+server.tool(
+  'generate-smart-page-object',
+  'Generate NALA page object with smart selectors and fallback chains using Playwright MCP data',
+  {
+    cardType: z.string().describe('Type of card'),
+    elements: z.record(z.object({
+      selector: z.string(),
+      fallbackSelectors: z.array(z.string()).optional(),
+      accessibilitySelectors: z.array(z.any()).optional(),
+      cssProperties: z.record(z.string()).optional(),
+      metadata: z.any().optional(),
+    })).describe('Elements data from analyze-browser-snapshot'),
+    useSmartSelectors: z.boolean().optional().describe('Enable smart selector generation with .or() chains (default: true)'),
+  },
+  async ({ cardType, elements, useSmartSelectors = true }) => {
+    try {
+      const generator = new SmartLocatorGenerator();
+
+      const pageObjectCode = generator.generatePageObject(cardType, elements, {
+        useSmartSelectors
+      });
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `# Smart Page Object for ${cardType}\n\nGenerated with multi-level fallback selectors for self-healing tests.\n\n## Page Object Code\n\n\`\`\`javascript\n${pageObjectCode}\n\`\`\`\n\n## Features\n\n- ✅ Smart selectors with .or() fallback chains\n- ✅ Accessibility-first approach (ARIA labels, roles)\n- ✅ Confidence scores in comments\n- ✅ Self-healing capabilities\n- ✅ Last validated timestamps\n\n## Usage\n\nSave this to your NALA page objects directory and use with existing test suites. The smart selectors will automatically fall back to alternative strategies if the primary selector fails.`,
+          },
+        ],
+      };
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error generating smart page object: ${error.message}`,
+          },
+        ],
+      };
+    }
+  }
+);
+
+server.tool(
   'add-project-config',
   'Add a project to the NALA MCP configuration',
   {
@@ -2342,7 +2445,7 @@ server.tool(
     try {
       const { addProject } = await import('./config.js');
       addProject(projectName, { path: projectPath, type: projectType });
-      
+
       return {
         content: [
           {
@@ -2371,8 +2474,7 @@ async function main() {
   // console.error('NALA Test Generator MCP Server running on stdio');
 }
 
-main().catch((error) => {
+main().catch(() => {
   // Note: Console output disabled to prevent MCP JSON parsing issues
-  // console.error('Fatal error in main():', error);
   process.exit(1);
 });

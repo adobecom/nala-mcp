@@ -71,39 +71,15 @@ export class SpecGenerator {
    * @returns {string}
    */
   generateCSSFeatures(config) {
-    let features = '';
-    let tcid = 0;
-
-    features += this.generateCSSFeature(config, tcid, 'card', 'card');
-    tcid++;
-
-    Object.keys(config.elements).forEach(elementName => {
-      features += this.generateCSSFeature(config, tcid, elementName, elementName);
-      tcid++;
-    });
-
-    return features;
-  }
-
-  /**
-   * @param {CardConfig} config
-   * @param {number} tcid
-   * @param {string} elementName
-   * @param {string} testName
-   * @returns {string}
-   */
-  generateCSSFeature(config, tcid, elementName, testName) {
-    const tags = this.generateTags(config, 'css', elementName);
+    const tags = this.generateTags(config, 'css', 'all');
     const cardId = config.cardId || '206a8742-0289-4196-92d4-ced99ec4191e';
-    
-    // Use path and browserParams from metadata directly
     const path = config.metadata?.path || '/studio.html';
-    const browserParams = config.metadata?.browserParams || '#query=';
+    const browserParams = config.metadata?.browserParams || '#page=content&path=nala&query=';
 
     return `
         {
-            tcid: '${tcid}',
-            name: '@studio-${config.cardType}-css-${testName}',
+            tcid: '0',
+            name: '@studio-${config.cardType}-css',
             path: '${path}',
             data: {
                 cardid: '${cardId}',
@@ -112,6 +88,7 @@ export class SpecGenerator {
             tags: '${tags}',
         },`;
   }
+
 
   /**
    * @param {CardConfig} config
@@ -469,11 +446,11 @@ ${dataEntries}
   generateTags(config, testType, elementName) {
     const baseTag = `@mas-studio @ccd @ccd-${config.cardType}`;
     const testTypeTag = `@ccd-${config.cardType}-${testType}`;
-    
+
     if (testType === 'css') {
       return `${baseTag} ${testTypeTag} @ccd-css`;
     }
-    
+
     return `${baseTag} ${testTypeTag}`;
   }
 } 

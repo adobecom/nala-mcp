@@ -97,6 +97,7 @@ This is a Model Context Protocol (MCP) server that generates NALA (Playwright) t
    - `file-output.js` - Handles file writing and path management
    - `variant-reader.js` - Reads card types and metadata from JSON
    - `live-card-extractor.js` - Browser automation for property extraction
+   - `mas-test-integration.js` - Integration helpers for MAS mas-test.js library
 
 4. **Integration Layer**
    - `nala-cli.js` - Command line interface for non-MCP environments
@@ -196,6 +197,37 @@ node nala-cli.js single css "card-id" my-new-card main
 # The tool will automatically discover and register the variant
 ```
 
+## MAS Test Library Integration (mas-test.js)
+
+### Recent Updates (2025)
+The test generator has been updated to use the centralized **`mas-test.js`** library from the MAS repository:
+
+**Key Changes:**
+1. **Centralized Imports**: All page objects and utilities are imported from `../../../../libs/mas-test.js`
+2. **No beforeEach Blocks**: Test setup is handled automatically by the `masTest` fixture
+3. **Parallel CSS Validation**: CSS tests now validate all properties in parallel using `Promise.allSettled()`
+4. **Test Page Tracking**: Uses `setTestPage(url)` to store URLs for failure reporting
+5. **Simplified Setup**: Removed manual page object instantiation and HTTP header configuration
+
+**Generated Import Pattern:**
+```javascript
+import { test, expect, studio, fries, webUtil, miloLibs, setTestPage } from '../../../../libs/mas-test.js';
+import COMFriesSpec from '../specs/fries_css.spec.js';
+```
+
+**CSS Test Pattern:**
+- Single test case per card type (not per element)
+- Parallel validation using `Promise.allSettled()`
+- Aggregated error reporting with validation labels
+- Color-coded failure messages
+
+**Benefits:**
+- ✅ Faster test execution (parallel validation)
+- ✅ Better error reporting (aggregated failures)
+- ✅ Cleaner test files (no boilerplate)
+- ✅ Automatic timeout extension (3x via fixture)
+- ✅ Built-in request tracking and performance monitoring
+
 ## Important Notes
 
 - The project integrates with MAS repository structure and expects specific paths
@@ -205,3 +237,4 @@ node nala-cli.js single css "card-id" my-new-card main
 - The `.nala-mcp.json` configuration file in target projects defines paths and import mappings
 - The CLI tool was renamed from `cursor-integration.js` to `nala-cli.js` for tool-agnostic naming
 - New variants are automatically discovered when used - no manual registration required
+- Generated tests now use the `mas-test.js` library and require MAS repo with updated structure

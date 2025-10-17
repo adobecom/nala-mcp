@@ -5,6 +5,12 @@
 
 import { getImportPaths } from '../config.js';
 import { WaitHelpers } from '../utils/wait-helpers.js';
+import {
+  generateMasTestImport,
+  getCardVariable,
+  generateValidationLabels,
+  getImportPathDepth
+} from '../utils/mas-test-integration.js';
 
 export class TestGenerator {
   /**
@@ -36,23 +42,12 @@ ${tests}
   getTestImports(config, testType) {
     const className = this.generateClassName(config.cardType);
     const specFileName = `${config.cardType}_${testType}.spec.js`;
-    const importPaths = getImportPaths();
+    const pathDepth = getImportPathDepth();
 
-    let imports = `import { test, expect } from '@playwright/test';
-import StudioPage from '${importPaths.studioPage}';
-import ${className}Spec from '../specs/${specFileName}';
-import ${className} from '../${config.cardType}.page.js';
-import WebUtil from '${importPaths.webUtil}';`;
+    const masTestImport = generateMasTestImport(config.cardType, testType);
+    const specImport = `import ${className}Spec from '../specs/${specFileName}';`;
 
-    if (testType === 'edit' || testType === 'save' || testType === 'discard') {
-      imports += `\nimport EditorPage from '${importPaths.editorPage}';`;
-    }
-
-    if (testType === 'save') {
-      imports += `\nimport OSTPage from '${importPaths.ostPage}';`;
-    }
-
-    return imports;
+    return `${masTestImport}\n${specImport}`;
   }
 
   /**
@@ -61,54 +56,8 @@ import WebUtil from '${importPaths.webUtil}';`;
    */
   generateSetup(config) {
     const className = this.generateClassName(config.cardType);
-    const variableName = config.cardType.replace(/-/g, '');
-    const testType = config.testTypes?.[0] || 'css';
 
-    let setup = `const { features } = ${className}Spec;
-const miloLibs = process.env.MILO_LIBS || '';
-
-let studio;
-let ${variableName};
-let webUtil;`;
-
-    // Only add editor and ost variables for test types that need them
-    if (testType === 'edit' || testType === 'save' || testType === 'discard') {
-      setup += '\nlet editor;';
-    }
-    
-    if (testType === 'edit' || testType === 'save') {
-      setup += '\nlet ost;';
-    }
-    
-    if (config.testTypes?.includes('save')) {
-      setup += '\nlet clonedCardID;';
-    }
-
-    setup += `
-
-test.beforeEach(async ({ page, browserName }) => {
-    test.slow();
-    if (browserName === 'chromium') {
-        await page.setExtraHTTPHeaders({
-            'sec-ch-ua': '"Chromium";v="123", "Not:A-Brand";v="8"',
-        });
-    }
-    studio = new StudioPage(page);
-    ${variableName} = new ${className}(page);
-    webUtil = new WebUtil(page);`;
-
-    // Only instantiate editor and ost for test types that need them
-    if (testType === 'edit' || testType === 'save' || testType === 'discard') {
-      setup += '\n    editor = new EditorPage(page);';
-    }
-    
-    if (testType === 'edit' || testType === 'save') {
-      setup += '\n    ost = new OSTPage(page);';
-    }
-
-    setup += '\n});';
-
-    return setup;
+    return `const { features } = ${className}Spec;`;
   }
 
   /**
@@ -140,65 +89,80 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateCSSTests(config) {
-    const variableName = config.cardType.replace(/-/g, '');
-    let tests = '';
-    let featureIndex = 0;
-
-    tests += this.generateSingleCSSTest(config, featureIndex, 'card', 'card', variableName);
-    featureIndex++;
-
-    Object.keys(config.elements).forEach(elementName => {
-      tests += this.generateSingleCSSTest(config, featureIndex, elementName, elementName, variableName);
-      featureIndex++;
-    });
-
-    return tests;
-  }
-
-  /**
-   * @param {CardConfig} config
-   * @param {number} featureIndex
-   * @param {string} elementName
-   * @param {string} cssPropertyName
-   * @param {string} variableName
-   * @returns {string}
-   */
-  generateSingleCSSTest(config, featureIndex, elementName, cssPropertyName, variableName) {
-    const testDescription = elementName === 'card' ? 
-      `Validate CSS for ${config.cardType} card size, background and border color` :
-      `Validate ${elementName} CSS for ${config.cardType} cards`;
-
-    const locatorCode = elementName === 'card' ? 
-      `${variableName}Card` : 
-      `${variableName}Card.locator(${variableName}.${this.camelCase(elementName)})`;
+    const cardVariable = getCardVariable(config.cardType);
+    const validationLabels = generateValidationLabels(config.elements);
+    const validationSteps = this.generateCSSValidationSteps(config, cardVariable);
 
     return `
-    // @studio-${config.cardType}-css-${elementName} - ${testDescription}
-    test(\`\${features[${featureIndex}].name},\${features[${featureIndex}].tags}\`, async ({
-        page,
-        baseURL,
-    }) => {
-        const { data } = features[${featureIndex}];
-        const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        const ${variableName}Card = await studio.getCard(data.cardid);
-        console.info('[Test Page]: ', testPage);
+    // @studio-${config.cardType}-css - Validate all CSS properties for ${config.cardType} card in parallel
+    test(\`\${features[0].name},\${features[0].tags}\`, async ({ page, baseURL }) => {
+        const { data } = features[0];
+        const testPage = \`\${baseURL}\${features[0].path}\${miloLibs}\${features[0].browserParams}\${data.cardid}\`;
+        const ${cardVariable}Card = await studio.getCard(data.cardid);
+        setTestPage(testPage);
+
+        const validationLabels = ${JSON.stringify(validationLabels)};
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
             await page.waitForLoadState('domcontentloaded');
-            await page.waitForLoadState('networkidle', { timeout: ${WaitHelpers.TIMEOUTS.NETWORK_IDLE} });
-            await page.waitForTimeout(${WaitHelpers.TIMEOUTS.SHORT});
         });
 
-        await test.step('step-2: Validate ${config.cardType} card CSS', async () => {
-            await expect(${variableName}Card).toBeVisible();
-            expect(
-                await webUtil.verifyCSS(${locatorCode}, ${variableName}.cssProp.${cssPropertyName}),
-            ).toBeTruthy();
+        await test.step('step-2: Validate ${config.cardType} card is visible', async () => {
+            await expect(${cardVariable}Card).toBeVisible();
+        });
+
+        await test.step('step-3: Validate all CSS properties in parallel', async () => {
+            const results = await Promise.allSettled([
+${validationSteps}
+            ]);
+
+            // Check results and report any failures
+            const failures = results
+                .map((result, index) => ({ result, index }))
+                .filter(({ result }) => result.status === 'rejected')
+                .map(({ result, index }) => \`🔍 Validation-\${index + 1} (\${validationLabels[index]}) failed: \${result.reason}\`);
+
+            if (failures.length > 0) {
+                throw new Error(\`\\x1b[31m✘\\x1b[0m ${config.cardType.charAt(0).toUpperCase() + config.cardType.slice(1)} card CSS validation failures:\\n\${failures.join('\\n')}\`);
+            }
         });
     });
 `;
   }
+
+  /**
+   * Generate parallel CSS validation steps
+   * @param {CardConfig} config
+   * @param {string} cardVariable
+   * @returns {string}
+   */
+  generateCSSValidationSteps(config, cardVariable) {
+    let steps = '';
+    let stepIndex = 1;
+
+    steps += `                // Card container CSS
+                test.step('Validation-${stepIndex}: Validate card container CSS', async () => {
+                    expect(await webUtil.verifyCSS(${cardVariable}Card, ${cardVariable}.cssProp.card)).toBeTruthy();
+                }),
+`;
+    stepIndex++;
+
+    Object.keys(config.elements).forEach(elementName => {
+      const camelCaseName = this.camelCase(elementName);
+      const firstSelector = elementName === 'price' || elementName === 'icon' ? '.first()' : '';
+
+      steps += `
+                // Card ${elementName} CSS
+                test.step('Validation-${stepIndex}: Validate card ${elementName} CSS', async () => {
+                    expect(await webUtil.verifyCSS(${cardVariable}Card.locator(${cardVariable}.${camelCaseName})${firstSelector}, ${cardVariable}.cssProp.${elementName})).toBeTruthy();
+                }),`;
+      stepIndex++;
+    });
+
+    return steps;
+  }
+
 
   /**
    * @param {CardConfig} config
@@ -252,7 +216,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateEditTitleTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-edit-title - Validate edit title for ${config.cardType} card in mas studio
@@ -262,7 +226,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -294,7 +258,7 @@ test.beforeEach(async ({ page, browserName }) => {
         });
 
         await test.step('step-5: Validate edited title field on the card', async () => {
-            await expect(await ${variableName}.cardTitle).toHaveText(data.newTitle);
+            await expect(await ${cardVariable}.cardTitle).toHaveText(data.newTitle);
         });
     });
 `;
@@ -306,7 +270,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateEditEyebrowTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-edit-eyebrow - Validate edit eyebrow field for ${config.cardType} card in mas studio
@@ -316,7 +280,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -348,7 +312,7 @@ test.beforeEach(async ({ page, browserName }) => {
         });
 
         await test.step('step-5: Validate edited eyebrow field on the card', async () => {
-            await expect(await ${variableName}.cardEyebrow).toHaveText(
+            await expect(await ${cardVariable}.cardEyebrow).toHaveText(
                 data.newSubtitle,
             );
         });
@@ -362,7 +326,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateEditDescriptionTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-edit-description - Validate edit description field for ${config.cardType} card in mas studio
@@ -372,7 +336,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -408,7 +372,7 @@ test.beforeEach(async ({ page, browserName }) => {
         });
 
         await test.step('step-5: Validate edited description on the card', async () => {
-            await expect(await ${variableName}.cardDescription).toHaveText(
+            await expect(await ${cardVariable}.cardDescription).toHaveText(
                 data.newDescription,
             );
         });
@@ -422,7 +386,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateEditIconTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-edit-mnemonic - Validate edit mnemonic URL field for ${config.cardType} card in mas studio
@@ -432,7 +396,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -464,7 +428,7 @@ test.beforeEach(async ({ page, browserName }) => {
         });
 
         await test.step('step-5: Validate edited mnemonic URL on the card', async () => {
-            await expect(await ${variableName}.cardIcon).toHaveAttribute(
+            await expect(await ${cardVariable}.cardIcon).toHaveAttribute(
                 'src',
                 data.newIconURL,
             );
@@ -487,7 +451,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -536,7 +500,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateEditPriceTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-edit-price - Validate edit price field for ${config.cardType} card in mas studio
@@ -546,7 +510,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -598,10 +562,10 @@ test.beforeEach(async ({ page, browserName }) => {
         });
 
         await test.step('step-5: Validate edited price field on the card', async () => {
-            await expect(await ${variableName}.cardPrice).toContainText(
+            await expect(await ${cardVariable}.cardPrice).toContainText(
                 data.newPrice,
             );
-            await expect(await ${variableName}.cardPrice).toContainText(
+            await expect(await ${cardVariable}.cardPrice).toContainText(
                 data.newStrikethroughPrice,
             );
         });
@@ -615,7 +579,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateEditCTATest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-edit-cta-label - Validate edit CTA label for ${config.cardType} card in mas studio
@@ -625,7 +589,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -666,14 +630,14 @@ test.beforeEach(async ({ page, browserName }) => {
         });
 
         await test.step('step-5: Validate edited CTA on the card', async () => {
-            await expect(await ${variableName}.cardCTA).toContainText(
+            await expect(await ${cardVariable}.cardCTA).toContainText(
                 data.newCtaText,
             );
-            await expect(await ${variableName}.cardCTA).toHaveAttribute(
+            await expect(await ${cardVariable}.cardCTA).toHaveAttribute(
                 'data-wcs-osi',
                 data.osi,
             );
-            await expect(await ${variableName}.cardCTA).toHaveAttribute(
+            await expect(await ${cardVariable}.cardCTA).toHaveAttribute(
                 'is',
                 'checkout-button',
             );
@@ -734,7 +698,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateSaveTitleTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-save-edited-title - Validate saving card after editing card title
@@ -744,7 +708,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
         let clonedCard;
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
@@ -778,7 +742,7 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-4: Validate edited card title', async () => {
             await expect(await editor.title).toHaveValue(data.newTitle);
             await expect(
-                await clonedCard.locator(${variableName}.cardTitle),
+                await clonedCard.locator(${cardVariable}.cardTitle),
             ).toHaveText(data.newTitle);
         });
     });
@@ -791,7 +755,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateSaveEyebrowTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-save-edited-eyebrow - Validate saving card after editing card eyebrow
@@ -801,7 +765,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
         let clonedCard;
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
@@ -835,7 +799,7 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-4: Validate edited card eyebrow', async () => {
             await expect(await editor.subtitle).toHaveValue(data.newSubtitle);
             await expect(
-                await clonedCard.locator(${variableName}.cardEyebrow),
+                await clonedCard.locator(${cardVariable}.cardEyebrow),
             ).toHaveText(data.newSubtitle);
         });
     });
@@ -848,7 +812,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateSaveDescriptionTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-save-edited-description - Validate saving card after editing card description
@@ -858,7 +822,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
         let clonedCard;
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
@@ -896,7 +860,7 @@ test.beforeEach(async ({ page, browserName }) => {
                 data.newDescription,
             );
             await expect(
-                await clonedCard.locator(${variableName}.cardDescription),
+                await clonedCard.locator(${cardVariable}.cardDescription),
             ).toHaveText(data.newDescription);
         });
     });
@@ -909,7 +873,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateSaveIconTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-save-edited-mnemonic - Validate saving card after editing card mnemonic
@@ -919,7 +883,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
         let clonedCard;
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
@@ -953,7 +917,7 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-4: Validate edited card mnemonic', async () => {
             await expect(await editor.iconURL).toHaveValue(data.newIconURL);
             await expect(
-                await clonedCard.locator(${variableName}.cardIcon),
+                await clonedCard.locator(${cardVariable}.cardIcon),
             ).toHaveAttribute('src', data.newIconURL);
         });
     });
@@ -974,7 +938,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
         let clonedCard;
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
@@ -1024,7 +988,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateSavePriceTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-save-edited-price - Validate saving card after editing card price
@@ -1034,7 +998,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
         let clonedCard;
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
@@ -1073,7 +1037,7 @@ test.beforeEach(async ({ page, browserName }) => {
                 data.strikethroughPrice,
             );
             await expect(
-                await clonedCard.locator(${variableName}.cardPrice),
+                await clonedCard.locator(${cardVariable}.cardPrice),
             ).toContainText(data.price);
         });
     });
@@ -1086,7 +1050,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateSaveCTATest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-save-edited-cta-label - Validate saving card after editing CTA label
@@ -1096,7 +1060,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
         let clonedCard;
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
@@ -1132,7 +1096,7 @@ test.beforeEach(async ({ page, browserName }) => {
         await test.step('step-4: Validate edited card CTA', async () => {
             await expect(await editor.footer).toContainText(data.newCtaText);
             await expect(
-                await clonedCard.locator(${variableName}.cardCTA),
+                await clonedCard.locator(${cardVariable}.cardCTA),
             ).toContainText(data.newCtaText);
         });
     });
@@ -1191,7 +1155,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateDiscardTitleTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-discard-edited-title - Validate discard edited title for ${config.cardType} card in mas studio
@@ -1201,7 +1165,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -1229,7 +1193,7 @@ test.beforeEach(async ({ page, browserName }) => {
         });
 
         await test.step('step-5: Verify there is no changes of the card', async () => {
-            await expect(await ${variableName}.cardTitle).toHaveText(data.title);
+            await expect(await ${cardVariable}.cardTitle).toHaveText(data.title);
             await (await studio.getCard(data.cardid)).dblclick();
             await expect(await editor.panel).toBeVisible();
             await expect(await editor.title).toHaveValue(data.title);
@@ -1244,7 +1208,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateDiscardEyebrowTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-discard-edited-eyebrow - Validate discard edited eyebrow field for ${config.cardType} card in mas studio
@@ -1254,7 +1218,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -1282,7 +1246,7 @@ test.beforeEach(async ({ page, browserName }) => {
         });
 
         await test.step('step-5: Verify there is no changes of the card', async () => {
-            await expect(await ${variableName}.cardEyebrow).toHaveText(data.subtitle);
+            await expect(await ${cardVariable}.cardEyebrow).toHaveText(data.subtitle);
             await (await studio.getCard(data.cardid)).dblclick();
             await expect(await editor.panel).toBeVisible();
             await expect(await editor.subtitle).toHaveValue(data.subtitle);
@@ -1297,7 +1261,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateDiscardDescriptionTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-discard-edited-description - Validate discard edited description field for ${config.cardType} card in mas studio
@@ -1307,7 +1271,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -1335,7 +1299,7 @@ test.beforeEach(async ({ page, browserName }) => {
         });
 
         await test.step('step-5: Verify there is no changes of the card', async () => {
-            await expect(await ${variableName}.cardDescription).toContainText(
+            await expect(await ${cardVariable}.cardDescription).toContainText(
                 data.description,
             );
             await (await studio.getCard(data.cardid)).dblclick();
@@ -1354,7 +1318,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateDiscardIconTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-discard-edited-mnemonic - Validate discard edited mnemonic field for ${config.cardType} card in mas studio
@@ -1364,7 +1328,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -1392,7 +1356,7 @@ test.beforeEach(async ({ page, browserName }) => {
         });
 
         await test.step('step-5: Verify there is no changes of the card', async () => {
-            await expect(await ${variableName}.cardIcon).toHaveAttribute(
+            await expect(await ${cardVariable}.cardIcon).toHaveAttribute(
                 'src',
                 data.iconURL,
             );
@@ -1418,7 +1382,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -1461,7 +1425,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateDiscardPriceTest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-discard-edited-price - Validate discard edited price field for ${config.cardType} card in mas studio
@@ -1471,7 +1435,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -1502,8 +1466,8 @@ test.beforeEach(async ({ page, browserName }) => {
         });
 
         await test.step('step-5: Verify there is no changes of the card', async () => {
-            await expect(await ${variableName}.cardPrice).toContainText(data.price);
-            await expect(await ${variableName}.cardPrice).toContainText(
+            await expect(await ${cardVariable}.cardPrice).toContainText(data.price);
+            await expect(await ${cardVariable}.cardPrice).toContainText(
                 data.strikethroughPrice,
             );
         });
@@ -1517,7 +1481,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateDiscardCTATest(config, featureIndex) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-discard-edited-cta-label - Validate discard edited CTA label for ${config.cardType} card in mas studio
@@ -1527,7 +1491,7 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        console.info('[Test Page]: ', testPage);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -1557,7 +1521,7 @@ test.beforeEach(async ({ page, browserName }) => {
         });
 
         await test.step('step-5: Verify there is no changes of the card', async () => {
-            await expect(await ${variableName}.cardCTA).toContainText(data.ctaText);
+            await expect(await ${cardVariable}.cardCTA).toContainText(data.ctaText);
             await (await studio.getCard(data.cardid)).dblclick();
             await expect(await editor.panel).toBeVisible();
             await expect(await editor.footer).toContainText(data.ctaText);
@@ -1594,7 +1558,7 @@ test.beforeEach(async ({ page, browserName }) => {
    * @returns {string}
    */
   generateFunctionalTest(config, featureIndex, elementName, interactionType) {
-    const variableName = config.cardType.replace(/-/g, '');
+    const cardVariable = getCardVariable(config.cardType);
 
     return `
     // @studio-${config.cardType}-${interactionType}-${elementName} - Test ${interactionType} interaction on ${elementName}
@@ -1604,8 +1568,8 @@ test.beforeEach(async ({ page, browserName }) => {
     }) => {
         const { data } = features[${featureIndex}];
         const testPage = \`\${baseURL}\${features[${featureIndex}].path}\${miloLibs}\${features[${featureIndex}].browserParams}\${data.cardid}\`;
-        const ${variableName}Card = await studio.getCard(data.cardid);
-        console.info('[Test Page]: ', testPage);
+        const ${cardVariable}Card = await studio.getCard(data.cardid);
+        setTestPage(testPage);
 
         await test.step('step-1: Go to MAS Studio test page', async () => {
             await page.goto(testPage);
@@ -1615,8 +1579,8 @@ test.beforeEach(async ({ page, browserName }) => {
         });
 
         await test.step('step-2: Perform ${interactionType} on ${elementName}', async () => {
-            await expect(${variableName}Card).toBeVisible();
-            await ${variableName}Card.locator(${variableName}.${this.camelCase(elementName)}).${this.getPlaywrightAction(interactionType)}();
+            await expect(${cardVariable}Card).toBeVisible();
+            await ${cardVariable}Card.locator(${cardVariable}.${this.camelCase(elementName)}).${this.getPlaywrightAction(interactionType)}();
         });
     });
 `;

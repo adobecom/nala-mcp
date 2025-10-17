@@ -17,21 +17,33 @@ export function generateMiloPageObject(blockType, category = 'block') {
     .split('-')
     .map(part => part.charAt(0).toUpperCase() + part.slice(1))
     .join('');
-  
+
   const template = `export default class ${className} {
   constructor(page, nth = 0) {
     this.page = page;
-    
-    // ${blockType} locators
+
+    // Section and ${blockType} locators
+    this.section = this.page.locator('.section').nth(nth);
     this.${blockType.replace(/-/g, '')} = this.page.locator('.${blockType}').nth(nth);
-    
+    this.foreground = this.${blockType.replace(/-/g, '')}.locator('.foreground');
+
     // Add more specific locators based on the block type
     // Example locators - replace with actual selectors for ${blockType}
-    this.heading = this.${blockType.replace(/-/g, '')}.locator('h2, h3').first();
-    this.content = this.${blockType.replace(/-/g, '')}.locator('.content, .text');
+    this.heading = this.${blockType.replace(/-/g, '')}.locator('h2, h3, [role=heading]');
+    this.content = this.${blockType.replace(/-/g, '')}.locator('.content, .text, .foreground');
     this.button = this.${blockType.replace(/-/g, '')}.locator('a.con-button, .button');
-    
+
     // Add any block-specific locators here
+
+    // ${blockType} attributes for verification
+    this.attributes = {
+      '${blockType}': {
+        class: '${blockType} con-block'
+      },
+      '${blockType}-variant': {
+        class: '${blockType} variant-class con-block'
+      }
+    };
   }
 }`;
 
@@ -109,20 +121,18 @@ function generateFunctionalTests(blockType, className, displayName) {
   return `import { expect, test } from '@playwright/test';
 import { features } from './${blockType}.spec.js';
 import ${className} from './${blockType}.page.js';
+import WebUtil from '../../libs/webutil.js';
+import { runAccessibilityTest } from '../../libs/accessibility.js';
 
 let ${blockType.replace(/-/g, '')};
+let webUtil;
 
 const miloLibs = process.env.MILO_LIBS || '';
 
 test.describe('Milo ${displayName} ${blockType === blockType ? 'Block' : 'Feature'} test suite', () => {
-  test.beforeEach(async ({ page, browserName }) => {
-    test.skip(browserName !== 'chromium', 'Not supported to run on multiple browsers.');
-    
+  test.beforeEach(async ({ page }) => {
     ${blockType.replace(/-/g, '')} = new ${className}(page);
-    
-    if (browserName === 'chromium') {
-      await page.setExtraHTTPHeaders({ 'sec-ch-ua': '"Chromium";v="123", "Not:A-Brand";v="8"' });
-    }
+    webUtil = new WebUtil(page);
   });
 
   // Test 0: Basic ${displayName} functionality
@@ -136,20 +146,37 @@ test.describe('Milo ${displayName} ${blockType === blockType ? 'Block' : 'Featur
       await expect(page).toHaveURL(\`\${baseURL}\${features[0].path}\${miloLibs}\`);
     });
 
-    await test.step('step-2: Verify ${displayName} structure', async () => {
+    await test.step('step-2: Verify ${displayName} content/specs', async () => {
       await expect(${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')}).toBeVisible();
-      
+
       // Verify heading if present
       if (await ${blockType.replace(/-/g, '')}.heading.count() > 0) {
         await expect(${blockType.replace(/-/g, '')}.heading).toBeVisible();
         await expect(${blockType.replace(/-/g, '')}.heading).toContainText(data.heading);
       }
-      
+
       // Verify content if present
       if (await ${blockType.replace(/-/g, '')}.content.count() > 0) {
         await expect(${blockType.replace(/-/g, '')}.content).toBeVisible();
         await expect(${blockType.replace(/-/g, '')}.content).toContainText(data.content);
       }
+
+      // Verify attributes if defined
+      if (${blockType.replace(/-/g, '')}.attributes && ${blockType.replace(/-/g, '')}.attributes['${blockType}']) {
+        expect(await webUtil.verifyAttributes(${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')},
+          ${blockType.replace(/-/g, '')}.attributes['${blockType}'])).toBeTruthy();
+      }
+    });
+
+    await test.step('step-3: Verify analytics attributes', async () => {
+      await expect(${blockType.replace(/-/g, '')}.section).toHaveAttribute('daa-lh',
+        await webUtil.getSectionDaalh(1));
+      await expect(${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')}).toHaveAttribute('daa-lh',
+        await webUtil.getBlockDaalh('${blockType}', 1));
+    });
+
+    await test.step('step-4: Verify the accessibility test on the ${displayName} block', async () => {
+      await runAccessibilityTest({ page, testScope: ${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')} });
     });
   });
 
@@ -164,10 +191,24 @@ test.describe('Milo ${displayName} ${blockType === blockType ? 'Block' : 'Featur
       await expect(page).toHaveURL(\`\${baseURL}\${features[1].path}\${miloLibs}\`);
     });
 
-    await test.step('step-2: Verify ${displayName} variant structure', async () => {
+    await test.step('step-2: Verify ${displayName} variant content/specs', async () => {
       await expect(${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')}).toBeVisible();
-      
+
       // Add variant-specific verifications here
+      // Verify attributes if defined
+      if (${blockType.replace(/-/g, '')}.attributes && ${blockType.replace(/-/g, '')}.attributes['${blockType}-variant']) {
+        expect(await webUtil.verifyAttributes(${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')},
+          ${blockType.replace(/-/g, '')}.attributes['${blockType}-variant'])).toBeTruthy();
+      }
+    });
+
+    await test.step('step-3: Verify analytics attributes', async () => {
+      await expect(${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')}).toHaveAttribute('daa-lh',
+        await webUtil.getBlockDaalh('${blockType}', 1));
+    });
+
+    await test.step('step-4: Verify the accessibility test on the ${displayName} variant', async () => {
+      await runAccessibilityTest({ page, testScope: ${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')} });
     });
   });
 });`;
@@ -177,20 +218,18 @@ function generateCSSTests(blockType, className, displayName) {
   return `import { expect, test } from '@playwright/test';
 import { features } from './${blockType}.spec.js';
 import ${className} from './${blockType}.page.js';
+import WebUtil from '../../libs/webutil.js';
+import { runAccessibilityTest } from '../../libs/accessibility.js';
 
 let ${blockType.replace(/-/g, '')};
+let webUtil;
 
 const miloLibs = process.env.MILO_LIBS || '';
 
 test.describe('Milo ${displayName} CSS test suite', () => {
-  test.beforeEach(async ({ page, browserName }) => {
-    test.skip(browserName !== 'chromium', 'Not supported to run on multiple browsers.');
-    
+  test.beforeEach(async ({ page }) => {
     ${blockType.replace(/-/g, '')} = new ${className}(page);
-    
-    if (browserName === 'chromium') {
-      await page.setExtraHTTPHeaders({ 'sec-ch-ua': '"Chromium";v="123", "Not:A-Brand";v="8"' });
-    }
+    webUtil = new WebUtil(page);
   });
 
   test(\`\${features[0].name} - CSS verification,\${features[0].tags}\`, async ({ page, baseURL }) => {
@@ -203,14 +242,23 @@ test.describe('Milo ${displayName} CSS test suite', () => {
 
     await test.step('step-2: Verify ${displayName} CSS properties', async () => {
       await expect(${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')}).toBeVisible();
-      
+
       // Verify CSS properties
       await expect(${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')}).toHaveCSS('display', 'block');
-      
+
       // Add more CSS verifications based on ${blockType} styling requirements
       // Examples:
       // await expect(${blockType.replace(/-/g, '')}.heading).toHaveCSS('font-weight', 'bold');
       // await expect(${blockType.replace(/-/g, '')}.content).toHaveCSS('margin-top', '16px');
+    });
+
+    await test.step('step-3: Verify analytics attributes', async () => {
+      await expect(${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')}).toHaveAttribute('daa-lh',
+        await webUtil.getBlockDaalh('${blockType}', 1));
+    });
+
+    await test.step('step-4: Verify the accessibility test on the ${displayName} block', async () => {
+      await runAccessibilityTest({ page, testScope: ${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')} });
     });
   });
 });`;
@@ -220,20 +268,18 @@ function generateInteractionTests(blockType, className, displayName) {
   return `import { expect, test } from '@playwright/test';
 import { features } from './${blockType}.spec.js';
 import ${className} from './${blockType}.page.js';
+import WebUtil from '../../libs/webutil.js';
+import { runAccessibilityTest } from '../../libs/accessibility.js';
 
 let ${blockType.replace(/-/g, '')};
+let webUtil;
 
 const miloLibs = process.env.MILO_LIBS || '';
 
 test.describe('Milo ${displayName} interaction test suite', () => {
-  test.beforeEach(async ({ page, browserName }) => {
-    test.skip(browserName !== 'chromium', 'Not supported to run on multiple browsers.');
-    
+  test.beforeEach(async ({ page }) => {
     ${blockType.replace(/-/g, '')} = new ${className}(page);
-    
-    if (browserName === 'chromium') {
-      await page.setExtraHTTPHeaders({ 'sec-ch-ua': '"Chromium";v="123", "Not:A-Brand";v="8"' });
-    }
+    webUtil = new WebUtil(page);
   });
 
   test(\`\${features[0].name} - Interaction test,\${features[0].tags}\`, async ({ page, baseURL }) => {
@@ -246,19 +292,28 @@ test.describe('Milo ${displayName} interaction test suite', () => {
 
     await test.step('step-2: Test ${displayName} interactions', async () => {
       await expect(${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')}).toBeVisible();
-      
+
       // Test click interactions
       if (await ${blockType.replace(/-/g, '')}.button.count() > 0) {
         await ${blockType.replace(/-/g, '')}.button.first().click();
         // Add assertions for expected behavior after click
       }
-      
+
       // Add more interaction tests based on ${blockType} functionality
       // Examples:
       // - Hover effects
       // - Keyboard navigation
       // - Form interactions
       // - State changes
+    });
+
+    await test.step('step-3: Verify analytics attributes', async () => {
+      await expect(${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')}).toHaveAttribute('daa-lh',
+        await webUtil.getBlockDaalh('${blockType}', 1));
+    });
+
+    await test.step('step-4: Verify the accessibility test on the ${displayName} block', async () => {
+      await runAccessibilityTest({ page, testScope: ${blockType.replace(/-/g, '')}.${blockType.replace(/-/g, '')} });
     });
   });
 });`;

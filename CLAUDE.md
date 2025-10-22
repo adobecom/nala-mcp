@@ -228,6 +228,125 @@ import COMFriesSpec from '../specs/fries_css.spec.js';
 - ✅ Automatic timeout extension (3x via fixture)
 - ✅ Built-in request tracking and performance monitoring
 
+## Milo Test Generation
+
+### Four-Step Test Structure
+All generated Milo tests follow a standardized four-step structure that matches production patterns:
+
+1. **Step 1: Navigation** - Navigate to test page and verify URL
+2. **Step 2: Content/Specs Verification** - Verify block visibility, content, and attributes
+3. **Step 3: Analytics Verification** - Verify DAA-LH attributes on section and block
+4. **Step 4: Accessibility Testing** - Run automated accessibility checks
+
+### WebUtil Integration
+Generated Milo tests integrate with the WebUtil library for:
+- **Analytics Validation**: `getSectionDaalh()`, `getBlockDaalh()`
+- **Attribute Verification**: `verifyAttributes()` using the page object's `attributes` property
+- **CSS Verification**: `verifyCSS()` for style validation
+
+### Accessibility Testing
+All generated tests include accessibility testing using `@axe-core/playwright`:
+```javascript
+await test.step('step-4: Verify the accessibility test on the block', async () => {
+  await runAccessibilityTest({ page, testScope: blockName.blockname });
+});
+```
+
+### Page Object Enhancements
+Generated Milo page objects include:
+- **Section Locator**: `this.section = this.page.locator('.section').nth(nth)`
+- **Foreground Locator**: `this.foreground = this.blockname.locator('.foreground')`
+- **Attributes Property**: Structured attribute definitions for verification
+```javascript
+this.attributes = {
+  'blockname': {
+    class: 'blockname con-block'
+  },
+  'blockname-variant': {
+    class: 'blockname variant-class con-block'
+  }
+};
+```
+
+### Example Generated Test
+```javascript
+import { expect, test } from '@playwright/test';
+import { features } from './accordion.spec.js';
+import Accordion from './accordion.page.js';
+import WebUtil from '../../libs/webutil.js';
+import { runAccessibilityTest } from '../../libs/accessibility.js';
+
+let accordion;
+let webUtil;
+
+const miloLibs = process.env.MILO_LIBS || '';
+
+test.describe('Milo Accordion Block test suite', () => {
+  test.beforeEach(async ({ page }) => {
+    accordion = new Accordion(page);
+    webUtil = new WebUtil(page);
+  });
+
+  test(`${features[0].name},${features[0].tags}`, async ({ page, baseURL }) => {
+    console.info(`[Test Page]: ${baseURL}${features[0].path}${miloLibs}`);
+    const { data } = features[0];
+
+    await test.step('step-1: Go to Accordion test page', async () => {
+      await page.goto(`${baseURL}${features[0].path}${miloLibs}`);
+      await page.waitForLoadState('domcontentloaded');
+      await expect(page).toHaveURL(`${baseURL}${features[0].path}${miloLibs}`);
+    });
+
+    await test.step('step-2: Verify Accordion content/specs', async () => {
+      await expect(accordion.accordion).toBeVisible();
+
+      if (accordion.attributes && accordion.attributes['accordion']) {
+        expect(await webUtil.verifyAttributes(accordion.accordion,
+          accordion.attributes['accordion'])).toBeTruthy();
+      }
+    });
+
+    await test.step('step-3: Verify analytics attributes', async () => {
+      await expect(accordion.section).toHaveAttribute('daa-lh',
+        await webUtil.getSectionDaalh(1));
+      await expect(accordion.accordion).toHaveAttribute('daa-lh',
+        await webUtil.getBlockDaalh('accordion', 1));
+    });
+
+    await test.step('step-4: Verify the accessibility test on the Accordion block', async () => {
+      await runAccessibilityTest({ page, testScope: accordion.accordion });
+    });
+  });
+});
+```
+
+## Known Issues and Fixes
+
+### Fixed: ReferenceError - dynamicCardTypes undefined (January 2025)
+**Issue**: MCP server crashed on startup with `ReferenceError: dynamicCardTypes is not defined` at [src/index.js:1035](src/index.js#L1035)
+
+**Root Cause**: The Zod schema for the `generate-from-url` tool used `.enum(dynamicCardTypes)` but the variable was never declared.
+
+**Fix**: Replaced static enum with dynamic runtime validation:
+```javascript
+// Before (broken):
+cardType: z
+  .enum(dynamicCardTypes)
+  .optional()
+
+// After (fixed):
+cardType: z
+  .string()
+  .optional()
+  .refine(
+    (val) => !val || isValidVariant(val),
+    { message: 'Invalid card type. Use one of the registered variants.' }
+  )
+  .describe('Type of card (optional - will be auto-detected if not provided)')
+```
+
+This leverages the existing `isValidVariant()` function which checks the dynamic variant registry at runtime.
+
 ## Important Notes
 
 - The project integrates with MAS repository structure and expects specific paths

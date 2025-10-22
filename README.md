@@ -1,6 +1,6 @@
 # NALA MCP
 
-A Model Context Protocol (MCP) server for generating NALA test files for Merch at Scale card components.
+A Model Context Protocol (MCP) server for generating NALA test files for both Merch at Scale (MAS) card components and Milo blocks/features.
 
 ## Table of Contents
 
@@ -26,21 +26,35 @@ A Model Context Protocol (MCP) server for generating NALA test files for Merch a
 
 ## Overview
 
-The NALA MCP automatically generates Playwright tests for Merch at Scale card components. It provides both MCP tools and CLI commands for test generation, validation, and execution with:
+The NALA MCP automatically generates Playwright tests for both Merch at Scale (MAS) card components and Milo blocks/features. It provides both MCP tools and CLI commands for test generation, validation, and execution with:
 
+### MAS Features
 - Generate complete NALA test suites for card components
 - Support for multiple card types (catalog, fries, plans, etc.)
 - Generate different test types (CSS, functional, edit, save, discard)
-- Extract card properties from live pages
+- **mas-test.js integration** - Centralized test library with parallel CSS validation
+- **Parallel CSS testing** - Validate all properties concurrently with Promise.allSettled()
+- **Dynamic variant discovery** from MAS project
+- **Custom variant registration** with surface mapping
+- **Pattern-based surface detection** rules
+
+### Milo Features
+- Generate tests for Milo blocks (accordion, marquee, etc.)
+- Generate tests for Milo features (feds/header, mas/acom/plans, etc.)
+- **Four-step test structure** - Navigation, content verification, analytics, accessibility
+- **WebUtil integration** - Analytics and attribute validation
+- **Accessibility testing** - Automated WCAG compliance checks with @axe-core/playwright
+- **Section locators and attributes** - Structured attribute verification
+
+### Universal Features
+- Extract card/block properties from live pages
 - Validate generated test files
 - **Run tests with detailed reporting**
 - **Automatic error detection and fixing**
 - **Complete test generation and execution workflow**
 - **Localhost testing support**
 - **Background execution with headless mode by default**
-- **Dynamic variant discovery from MAS project**
-- **Custom variant registration with surface mapping**
-- **Pattern-based surface detection rules**
+- **Multi-project configuration** - Support both MAS and Milo projects simultaneously
 
 ## Installation
 
@@ -554,6 +568,7 @@ nala/studio/acom/plans/
 
 ### Generated File Structure
 
+**MAS Project:**
 ```
 nala/
 └── studio/
@@ -571,6 +586,184 @@ nala/
                 ├── [card-type]_save.test.js
                 └── [card-type]_discard.test.js
 ```
+
+**Milo Project:**
+```
+nala/
+├── blocks/
+│   └── [block-name]/
+│       ├── [block-name].page.js
+│       ├── [block-name].spec.js
+│       └── [block-name].test.js
+└── features/
+    └── [feature-name]/
+        ├── [feature-name].page.js
+        ├── [feature-name].spec.js
+        └── [feature-name].test.js
+```
+
+## MAS Test Library Integration (mas-test.js)
+
+### Overview
+
+Generated MAS tests now use the centralized **mas-test.js** library for improved test structure and performance:
+
+**Key Features:**
+- ✅ **Centralized imports** - All page objects and utilities from one library
+- ✅ **No beforeEach blocks** - Setup handled by masTest fixture
+- ✅ **Parallel CSS validation** - Concurrent property validation with Promise.allSettled()
+- ✅ **Automatic timeouts** - 3x timeout extension via fixture
+- ✅ **Request tracking** - Built-in performance monitoring
+
+### Generated Import Pattern
+
+```javascript
+import { test, expect, studio, fries, webUtil, miloLibs, setTestPage } from '../../../../libs/mas-test.js';
+import COMFriesSpec from '../specs/fries_css.spec.js';
+```
+
+### CSS Test Pattern
+
+**Single test case per card type** with parallel validation:
+
+```javascript
+test(`${features[0].name},${features[0].tags}`, async ({ page, baseURL }) => {
+    const { data } = features[0];
+    const testPage = `${baseURL}${features[0].path}${miloLibs}${features[0].browserParams}${data.cardid}`;
+    const friesCard = await studio.getCard(data.cardid);
+    setTestPage(testPage);
+
+    const validationLabels = ['title', 'description', 'cta', 'price'];
+
+    await test.step('step-3: Validate all CSS properties in parallel', async () => {
+        const results = await Promise.allSettled([
+            expect(friesCard.title).toHaveCSS('font-size', '20px'),
+            expect(friesCard.description).toHaveCSS('color', 'rgb(0, 0, 0)'),
+            expect(friesCard.cta).toHaveCSS('background-color', 'rgb(20, 115, 230)'),
+            expect(friesCard.price).toHaveCSS('font-weight', '700')
+        ]);
+
+        const failures = results
+            .map((result, index) => ({ result, index }))
+            .filter(({ result }) => result.status === 'rejected')
+            .map(({ result, index }) => `🔍 Validation-${index + 1} (${validationLabels[index]}) failed: ${result.reason}`);
+
+        if (failures.length > 0) {
+            throw new Error(`\x1b[31m✘\x1b[0m fries card CSS validation failures:\n${failures.join('\n')}`);
+        }
+    });
+});
+```
+
+**Benefits:**
+- Faster execution (parallel vs sequential)
+- Better error reporting (see all failures at once)
+- Cleaner test files (no boilerplate)
+- Color-coded failure messages
+
+## Milo Test Generation
+
+### Four-Step Test Structure
+
+All generated Milo tests follow a standardized structure:
+
+1. **Step 1: Navigation** - Navigate to test page and verify URL
+2. **Step 2: Content Verification** - Verify block visibility, content, and attributes
+3. **Step 3: Analytics Verification** - Verify DAA-LH attributes
+4. **Step 4: Accessibility Testing** - Run automated WCAG checks
+
+### Generated Test Example
+
+```javascript
+import { expect, test } from '@playwright/test';
+import { features } from './accordion.spec.js';
+import Accordion from './accordion.page.js';
+import WebUtil from '../../libs/webutil.js';
+import { runAccessibilityTest } from '../../libs/accessibility.js';
+
+let accordion;
+let webUtil;
+
+test.describe('Milo Accordion Block test suite', () => {
+  test.beforeEach(async ({ page }) => {
+    accordion = new Accordion(page);
+    webUtil = new WebUtil(page);
+  });
+
+  test(`${features[0].name},${features[0].tags}`, async ({ page, baseURL }) => {
+    await test.step('step-1: Go to Accordion test page', async () => {
+      await page.goto(`${baseURL}${features[0].path}`);
+      await expect(page).toHaveURL(`${baseURL}${features[0].path}`);
+    });
+
+    await test.step('step-2: Verify Accordion content/specs', async () => {
+      await expect(accordion.accordion).toBeVisible();
+
+      if (accordion.attributes && accordion.attributes['accordion']) {
+        expect(await webUtil.verifyAttributes(accordion.accordion,
+          accordion.attributes['accordion'])).toBeTruthy();
+      }
+    });
+
+    await test.step('step-3: Verify analytics attributes', async () => {
+      await expect(accordion.section).toHaveAttribute('daa-lh',
+        await webUtil.getSectionDaalh(1));
+      await expect(accordion.accordion).toHaveAttribute('daa-lh',
+        await webUtil.getBlockDaalh('accordion', 1));
+    });
+
+    await test.step('step-4: Verify accessibility', async () => {
+      await runAccessibilityTest({ page, testScope: accordion.accordion });
+    });
+  });
+});
+```
+
+### Page Object Enhancements
+
+Generated Milo page objects include:
+
+```javascript
+export default class Accordion {
+  constructor(page, nth = 0) {
+    this.page = page;
+
+    // Section and accordion locators
+    this.section = this.page.locator('.section').nth(nth);
+    this.accordion = this.page.locator('.accordion').nth(nth);
+    this.foreground = this.accordion.locator('.foreground');
+
+    // Specific locators
+    this.heading = this.accordion.locator('h2, h3, [role=heading]');
+    this.content = this.accordion.locator('.content, .text, .foreground');
+    this.button = this.accordion.locator('a.con-button, .button');
+
+    // Attributes for verification
+    this.attributes = {
+      'accordion': {
+        class: 'accordion con-block'
+      },
+      'accordion-variant': {
+        class: 'accordion variant-class con-block'
+      }
+    };
+  }
+}
+```
+
+### WebUtil Integration
+
+Milo tests integrate with WebUtil for:
+- **Analytics**: `getSectionDaalh()`, `getBlockDaalh()`
+- **Attributes**: `verifyAttributes()` using page object's attributes property
+- **CSS**: `verifyCSS()` for style validation
+
+### Accessibility Testing
+
+All Milo tests include automated accessibility checks:
+- Uses `@axe-core/playwright` for WCAG compliance
+- Scoped to specific block/feature
+- Reports violations with details
 
 ## Running Tests
 
@@ -787,6 +980,37 @@ LOCAL_TEST_LIVE_URL="http://localhost:3000" npx playwright test nala/studio/comm
 ```
 
 ## Troubleshooting
+
+### Recent Fixes (January 2025)
+
+#### Fixed: MCP Server Startup Failure - ReferenceError
+
+**Issue**: MCP server crashed on startup with:
+```
+ReferenceError: dynamicCardTypes is not defined
+    at file:///path/to/nala-mcp/src/index.js:1035:13
+```
+
+**Root Cause**: The Zod schema for `generate-from-url` tool referenced an undefined variable `dynamicCardTypes`.
+
+**Fix Applied**: Replaced static enum with dynamic runtime validation:
+```javascript
+// Before (broken):
+cardType: z
+  .enum(dynamicCardTypes)
+  .optional()
+
+// After (fixed):
+cardType: z
+  .string()
+  .optional()
+  .refine(
+    (val) => !val || isValidVariant(val),
+    { message: 'Invalid card type. Use one of the registered variants.' }
+  )
+```
+
+**Status**: ✅ Fixed in current version. Server now starts successfully.
 
 ### Common Issues
 

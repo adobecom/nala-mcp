@@ -1032,8 +1032,12 @@ server.tool(
       .optional()
       .describe('Milolibs branch (e.g., \'MWPW-170520\')'),
     cardType: z
-      .enum(dynamicCardTypes)
+      .string()
       .optional()
+      .refine(
+        (val) => !val || isValidVariant(val),
+        { message: 'Invalid card type. Use one of the registered variants.' }
+      )
       .describe(
         'Type of card (optional - will be auto-detected if not provided)'
       ),

@@ -59,7 +59,7 @@ The NALA MCP automatically generates Playwright tests for both Merch at Scale (M
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/nala-mcp.git
+git clone https://github.com/adobecom/nala-mcp.git
 cd nala-mcp
 npm install
 npx playwright install
@@ -125,15 +125,103 @@ export IMS_PASS=<your-adobe-test-password>
 - These are only required for actual test execution, not for test generation or validation
 - When using MCP tools, ensure the MCP server process has access to these environment variables
 
-### 3. Verify Setup
+### 3. Connect to Your AI Assistant (MCP Setup)
+
+NALA MCP works with **any tool that supports the Model Context Protocol** including Claude Code, Cursor, Claude Desktop, and more!
+
+#### **For Claude Code (VS Code Extension):**
+
+1. Open VS Code Settings (Cmd/Ctrl + ,)
+2. Search for "Claude Code MCP Settings"
+3. Click "Edit in settings.json"
+4. Add the NALA MCP server:
+
+```json
+{
+  "mcpServers": {
+    "nala-mcp": {
+      "command": "node",
+      "args": ["/absolute/path/to/nala-mcp/src/index.js"],
+      "env": {
+        "MAS_PROJECT_PATH": "/path/to/your/mas/project",
+        "MILO_PROJECT_PATH": "/path/to/your/milo/project"
+      }
+    }
+  }
+}
+```
+
+#### **For Cursor:**
+
+1. Open Cursor Settings (Cmd/Ctrl + ,)
+2. Search for "MCP" or navigate to the MCP section
+3. Add a new MCP server with these settings:
+   - **Name**: `nala-mcp`
+   - **Command**: `node`
+   - **Args**: `/absolute/path/to/nala-mcp/src/index.js`
+   - **Environment Variables**:
+     - `MAS_PROJECT_PATH`: `/path/to/your/mas/project`
+     - `MILO_PROJECT_PATH`: `/path/to/your/milo/project`
+
+**Or edit your Cursor MCP config file directly** (`~/.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "nala-mcp": {
+      "command": "node",
+      "args": ["/absolute/path/to/nala-mcp/src/index.js"],
+      "env": {
+        "MAS_PROJECT_PATH": "/path/to/your/mas/project",
+        "MILO_PROJECT_PATH": "/path/to/your/milo/project"
+      }
+    }
+  }
+}
+```
+
+#### **For Claude Desktop:**
+
+Edit your Claude Desktop config file:
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "nala-mcp": {
+      "command": "node",
+      "args": ["/absolute/path/to/nala-mcp/src/index.js"],
+      "env": {
+        "MAS_PROJECT_PATH": "/path/to/your/mas/project",
+        "MILO_PROJECT_PATH": "/path/to/your/milo/project"
+      }
+    }
+  }
+}
+```
+
+#### **For Other MCP-Compatible Tools:**
+
+Follow your tool's MCP configuration instructions using:
+- **Command**: `node`
+- **Args**: Absolute path to `src/index.js` in your nala-mcp installation
+- **Environment Variables**: Set `MAS_PROJECT_PATH` and/or `MILO_PROJECT_PATH`
+
+### 4. Verify Setup
 
 ```bash
-# Start the MCP server
+# Start the MCP server (for testing)
 npm start
 
 # Or use CLI to check configuration
 node nala-cli.js show-config
 ```
+
+Once configured, ask your AI assistant to:
+- "Generate CSS tests for the fries card with ID 'card-123'"
+- "Create a complete test suite for the accordion block"
+- "Extract properties from this live card and generate tests"
 
 ## Dynamic Variant Support
 
@@ -189,14 +277,14 @@ If Cursor doesn't have native MCP support, use the integration script:
 
 ```bash
 # Get example configuration
-node cursor-integration.js example
+node nala-cli.js example
 
 # Generate complete test suite from config file  
-node cursor-integration.js complete-suite example-config.json
+node nala-cli.js complete-suite example-config.json
 
 # Generate specific components
-node cursor-integration.js page-object example-config.json
-node cursor-integration.js test-impl example-config.json css
+node nala-cli.js page-object example-config.json
+node nala-cli.js test-impl example-config.json css
 ```
 
 ## Configuration
@@ -317,11 +405,11 @@ Update your Cursor settings to include the NALA-MCP server:
 
 | Command             | Description                 | Example                                                                      |
 | ------------------- | --------------------------- | ---------------------------------------------------------------------------- |
-| `single`            | Generate specific test type | `node cursor-integration.js single css "card-id" fries main`                 |
-| `generate-and-test` | Complete workflow           | `node cursor-integration.js generate-and-test css "card-id" fries main true` |
-| `auto-extract`      | Extract card properties     | `node cursor-integration.js auto-extract "card-id" main true`                |
-| `validate`          | Validate generated files    | `node cursor-integration.js validate fries css`                              |
-| `run-tests`         | Execute tests               | `node cursor-integration.js run-tests fries css true`                        |
+| `single`            | Generate specific test type | `node nala-cli.js single css "card-id" fries main`                 |
+| `generate-and-test` | Complete workflow           | `node nala-cli.js generate-and-test css "card-id" fries main true` |
+| `auto-extract`      | Extract card properties     | `node nala-cli.js auto-extract "card-id" main true`                |
+| `validate`          | Validate generated files    | `node nala-cli.js validate fries css`                              |
+| `run-tests`         | Execute tests               | `node nala-cli.js run-tests fries css true`                        |
 
 ### Information Commands
 
@@ -516,34 +604,32 @@ get title() {
 - 📊 **Confidence scoring**: Know how reliable each selector is
 - 📈 **Success rate**: ~95% vs ~70% with traditional selectors
 
-For more details, see [PLAYWRIGHT-MCP-INTEGRATION.md](./PLAYWRIGHT-MCP-INTEGRATION.md)
-
 ## Workflows
 
 ### Single Test Generation
 
 ```bash
 # 1. Check available types
-node cursor-integration.js list-types
+node nala-cli.js list-types
 
 # 2. Generate test
-node cursor-integration.js single css "card-id" fries main
+node nala-cli.js single css "card-id" fries main
 
 # 3. Validate  
-node cursor-integration.js validate fries css
+node nala-cli.js validate fries css
 
 # 4. Run test (validation only)
-node cursor-integration.js run-tests fries css true chromium 30000 true
+node nala-cli.js run-tests fries css true chromium 30000 true
 ```
 
 ### Complete Workflow (Recommended)
 
 ```bash
 # Generate, validate, and test in one command
-node cursor-integration.js generate-and-test css "card-id" fries main true
+node nala-cli.js generate-and-test css "card-id" fries main true
 
 # Generate, validate, and execute tests
-node cursor-integration.js generate-and-test css "card-id" fries main false
+node nala-cli.js generate-and-test css "card-id" fries main false
 ```
 
 ### Multi-Test Type Generation
@@ -554,7 +640,7 @@ CARD_TYPE="fries"
 BRANCH="main"
 
 for TEST_TYPE in css edit save discard; do
-  node cursor-integration.js single $TEST_TYPE "$CARD_ID" "$CARD_TYPE" "$BRANCH"
+  node nala-cli.js single $TEST_TYPE "$CARD_ID" "$CARD_TYPE" "$BRANCH"
 done
 ```
 
@@ -562,10 +648,10 @@ done
 
 ```bash
 # Use feature branch
-node cursor-integration.js single css "card-id" fries "feature-branch"
+node nala-cli.js single css "card-id" fries "feature-branch"
 
 # Extract from development branch
-node cursor-integration.js auto-extract "card-id" "dev-branch" true
+node nala-cli.js auto-extract "card-id" "dev-branch" true
 ```
 
 ## Property Extraction
@@ -574,20 +660,20 @@ node cursor-integration.js auto-extract "card-id" "dev-branch" true
 
 ```bash
 # Headless mode (fastest)
-node cursor-integration.js auto-extract "card-id" main true
+node nala-cli.js auto-extract "card-id" main true
 
 # Visible browser (for debugging)
-node cursor-integration.js auto-extract "card-id" main false
+node nala-cli.js auto-extract "card-id" main false
 ```
 
 ### Manual Extraction
 
 ```bash
 # Generate console script
-node cursor-integration.js extract "card-id" main
+node nala-cli.js extract "card-id" main
 
 # Generate Playwright script
-node cursor-integration.js playwright-extract "card-id" main
+node nala-cli.js playwright-extract "card-id" main
 ```
 
 ### What Gets Extracted
@@ -828,13 +914,13 @@ All Milo tests include automated accessibility checks:
 
 ```bash
 # Run CSS tests for fries card  
-node cursor-integration.js run-tests fries css true
+node nala-cli.js run-tests fries css true
 
 # Run with visible browser
-node cursor-integration.js run-tests fries css false
+node nala-cli.js run-tests fries css false
 
 # Custom timeout and browser
-node cursor-integration.js run-tests fries css true firefox 45000
+node nala-cli.js run-tests fries css true firefox 45000
 ```
 
 ### Running Tests Manually
@@ -900,12 +986,12 @@ node run-tests-background.js fries:css:fries-ace fries:edit:fries-ace catalog:sa
 
 ```bash
 # Single test in background
-node cursor-integration.js generate-and-test css "fries-ace" fries main true &
+node nala-cli.js generate-and-test css "fries-ace" fries main true &
 
 # Multiple parallel tests
-node cursor-integration.js run-tests fries css true &
-node cursor-integration.js run-tests plans edit true &
-node cursor-integration.js run-tests catalog save true &
+node nala-cli.js run-tests fries css true &
+node nala-cli.js run-tests plans edit true &
+node nala-cli.js run-tests catalog save true &
 ```
 
 #### Monitoring Background Tests
@@ -1078,14 +1164,14 @@ cardType: z
 pwd  # Should end with: /mas/nala-mcp
 
 # Check if files exist
-ls cursor-integration.js
+ls nala-cli.js
 ```
 
 #### Card Type Not Found
 
 ```bash
 # List available card types
-node cursor-integration.js list-types
+node nala-cli.js list-types
 
 # Check spelling and case sensitivity
 ```
@@ -1094,7 +1180,7 @@ node cursor-integration.js list-types
 
 ```bash
 # Use visible browser for debugging
-node cursor-integration.js auto-extract "card-id" main false
+node nala-cli.js auto-extract "card-id" main false
 
 # Check if card exists on branch
 # Verify branch name spelling
@@ -1104,13 +1190,13 @@ node cursor-integration.js auto-extract "card-id" main false
 
 ```bash
 # Validate card type is supported
-node cursor-integration.js list-types
+node nala-cli.js list-types
 
 # Check file permissions
 ls -la nala/studio/
 
 # Verify configuration
-node cursor-integration.js show-paths [cardType] [testType]
+node nala-cli.js show-paths [cardType] [testType]
 ```
 
 #### Test Execution Fails
@@ -1120,10 +1206,10 @@ node cursor-integration.js show-paths [cardType] [testType]
 npx playwright install
 
 # Run validation only first
-node cursor-integration.js run-tests [cardType] [testType] true chromium 30000 true
+node nala-cli.js run-tests [cardType] [testType] true chromium 30000 true
 
 # Check generated file syntax
-node cursor-integration.js validate [cardType] [testType]
+node nala-cli.js validate [cardType] [testType]
 ```
 
 #### Authentication Issues
@@ -1136,10 +1222,10 @@ For non-local branches, you may need to authenticate:
 
 #### Getting Help
 
-1. **Check available commands**: `node cursor-integration.js` (no arguments)
-2. **List card types**: `node cursor-integration.js list-types`
-3. **Preview file paths**: `node cursor-integration.js show-paths [cardType] [testType]`
-4. **Validate files**: `node cursor-integration.js validate [cardType] [testType]`
+1. **Check available commands**: `node nala-cli.js` (no arguments)
+2. **List card types**: `node nala-cli.js list-types`
+3. **Preview file paths**: `node nala-cli.js show-paths [cardType] [testType]`
+4. **Validate files**: `node nala-cli.js validate [cardType] [testType]`
 
 ## Best Practices
 
@@ -1177,22 +1263,22 @@ For non-local branches, you may need to authenticate:
 
 ```bash
 # Generate specific test type
-node cursor-integration.js single css "card-id" fries main
+node nala-cli.js single css "card-id" fries main
 
 # Complete workflow (recommended)
-node cursor-integration.js generate-and-test css "card-id" fries main true
+node nala-cli.js generate-and-test css "card-id" fries main true
 
 # Auto-extract from live card
-node cursor-integration.js auto-extract "card-id" main true
+node nala-cli.js auto-extract "card-id" main true
 
 # List available card types
-node cursor-integration.js list-types
+node nala-cli.js list-types
 
 # Preview file locations
-node cursor-integration.js show-paths fries css
+node nala-cli.js show-paths fries css
 
 # Validate generated files
-node cursor-integration.js validate fries css
+node nala-cli.js validate fries css
 ```
 
 ### Quick Workflows
@@ -1200,21 +1286,21 @@ node cursor-integration.js validate fries css
 #### Single Test
 
 ```bash
-node cursor-integration.js single css "card-id" fries main
-node cursor-integration.js validate fries css
+node nala-cli.js single css "card-id" fries main
+node nala-cli.js validate fries css
 ```
 
 #### Complete Workflow
 
 ```bash
-node cursor-integration.js generate-and-test css "card-id" fries main true
+node nala-cli.js generate-and-test css "card-id" fries main true
 ```
 
 #### Multiple Test Types
 
 ```bash
 for TEST_TYPE in css edit save discard; do
-  node cursor-integration.js single $TEST_TYPE "card-id" fries main
+  node nala-cli.js single $TEST_TYPE "card-id" fries main
 done
 ```
 
@@ -1222,17 +1308,17 @@ done
 
 ```bash
 # Headless mode (default, faster)
-node cursor-integration.js run-tests fries css true chromium 30000 false
+node nala-cli.js run-tests fries css true chromium 30000 false
 
 # Visible browser (for debugging)
-node cursor-integration.js run-tests fries css false chromium 30000 false
+node nala-cli.js run-tests fries css false chromium 30000 false
 
 # Different browsers
-node cursor-integration.js run-tests fries css true firefox 30000 false
-node cursor-integration.js run-tests fries css true webkit 30000 false
+node nala-cli.js run-tests fries css true firefox 30000 false
+node nala-cli.js run-tests fries css true webkit 30000 false
 
 # Custom timeout (45 seconds)
-node cursor-integration.js run-tests fries css true chromium 45000 false
+node nala-cli.js run-tests fries css true chromium 45000 false
 ```
 
 ## Example Workflow

@@ -1,7 +1,7 @@
 {
   "projects": {
     "milo": {
-      "path": "/Users/axelcurenobasurto/Web/milo",
+      "path": "/path/to/your/milo/project",
       "type": "milo",
       "testOutputPath": "nala",
       "importPaths": {

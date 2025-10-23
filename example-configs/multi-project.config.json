@@ -1,7 +1,7 @@
 {
   "projects": {
     "mas": {
-      "path": "/Users/axelcurenobasurto/Web/mas",
+      "path": "/path/to/your/mas/project",
       "type": "mas",
       "testOutputPath": "nala",
       "importPaths": {
@@ -12,7 +12,7 @@
       }
     },
     "milo": {
-      "path": "/Users/axelcurenobasurto/Web/milo",
+      "path": "/path/to/your/milo/project",
       "type": "milo",
       "testOutputPath": "nala",
       "importPaths": {

@@ -28,6 +28,7 @@ out/
 # IDE and editor files
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 *~
@@ -91,6 +92,7 @@ playwright/.cache/
 
 # Local configuration overrides
 .nala-mcp.local.json
+.nala-mcp.json
 config.local.json
 
 # Generated test files (if needed during development but not for commits)

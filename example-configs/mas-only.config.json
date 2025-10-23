@@ -1,5 +1,5 @@
 {
-  "targetProjectPath": "/Users/axelcurenobasurto/Web/mas",
+  "targetProjectPath": "/path/to/your/mas/project",
   "testOutputPath": "nala",
   "importPaths": {
     "studioPage": "../../../libs/studio-page.js",

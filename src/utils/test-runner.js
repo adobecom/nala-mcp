@@ -245,10 +245,12 @@ function executePlaywrightTest(testFilePath, options = {}) {
             args.push('--headed');
         }
 
+        if (!process.env.IMS_EMAIL || !process.env.IMS_PASS) {
+            throw new Error('IMS_EMAIL and IMS_PASS environment variables are required for test execution');
+        }
+
         const envVars = {
             ...process.env,
-            IMS_EMAIL: process.env.IMS_EMAIL || 'cod23684+masautomation@adobetest.com',
-            IMS_PASS: process.env.IMS_PASS || 'AdobeTestPassword321$',
         };
 
         const projectRoot = getTargetProjectRoot();

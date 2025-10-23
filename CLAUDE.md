@@ -39,11 +39,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Multi-Project Support
 
-The MCP now supports both MAS and Milo projects. Configure projects using:
+The MCP supports MAS-only, Milo-only, or both projects. Configure using environment variables or JSON config:
+
+**Important**: You only need to configure the project(s) you work with!
+- Milo-only teams: Set only `MILO_PROJECT_PATH`
+- MAS-only teams: Set only `MAS_PROJECT_PATH`
+- Multi-project teams: Set both paths
+
 ```bash
-# Add projects
-node nala-cli.js add-project mas /Users/axel/Web/mas mas
-node nala-cli.js add-project milo /Users/axel/Web/milo milo
+# Option 1: Using .env file (recommended)
+cp .env.example .env
+# Edit .env - set only the project(s) you need
+
+# Option 2: Using CLI to add projects to .nala-mcp.json
+node nala-cli.js add-project mas /path/to/your/mas/project mas
+# or
+node nala-cli.js add-project milo /path/to/your/milo/project milo
+# or both
 
 # View configuration
 node nala-cli.js show-config

@@ -65,7 +65,52 @@ npm install
 npx playwright install
 ```
 
-### Environment Variables
+## Quick Setup
+
+### 1. Configure Your Project Paths
+
+Choose the configuration method that works best for your team:
+
+**Option A: Using .env (Recommended)**
+
+```bash
+# Copy the example file
+cp .env.example .env
+```
+
+**For Milo-only teams:**
+```bash
+# Edit .env and set only:
+# MILO_PROJECT_PATH=/path/to/your/milo/project
+# (Comment out or remove MAS_PROJECT_PATH)
+```
+
+**For MAS-only teams:**
+```bash
+# Edit .env and set only:
+# MAS_PROJECT_PATH=/path/to/your/mas/project
+# (Comment out or remove MILO_PROJECT_PATH)
+```
+
+**For multi-project teams:**
+```bash
+# Edit .env and set both:
+# MAS_PROJECT_PATH=/path/to/your/mas/project
+# MILO_PROJECT_PATH=/path/to/your/milo/project
+# DEFAULT_PROJECT=mas  # or 'milo'
+```
+
+**Option B: Using .nala-mcp.json**
+```bash
+# Copy the appropriate example file
+cp .nala-mcp.json.example .nala-mcp.json
+# or use example-configs/milo-only.config.json
+# or use example-configs/mas-only.config.json
+
+# Edit with your project paths
+```
+
+### 2. Test Authentication (Optional)
 
 For running actual tests (not just validation), set up authentication:
 
@@ -80,7 +125,17 @@ export IMS_PASS=<your-adobe-test-password>
 - These are only required for actual test execution, not for test generation or validation
 - When using MCP tools, ensure the MCP server process has access to these environment variables
 
-## Quick Setup
+### 3. Verify Setup
+
+```bash
+# Start the MCP server
+npm start
+
+# Or use CLI to check configuration
+node nala-cli.js show-config
+```
+
+## Dynamic Variant Support
 
 ### Dynamic Variant Support
 
@@ -197,8 +252,8 @@ This guide explains how to configure the NALA-MCP server to work with your MAS r
 
 ### Prerequisites
 
-1. **MAS Repository**: Located at `/Users/axelcurenobasurto/Web/mas`
-2. **NALA-MCP Server**: Located at `/Users/axelcurenobasurto/Web/nala-mcp`
+1. **MAS Repository**: Clone or locate your MAS project
+2. **NALA-MCP Server**: Clone this repository
 3. **Node.js**: Version 18+ installed
 4. **Playwright**: Installed in the MAS repository
 
@@ -210,7 +265,7 @@ Create `.nala-mcp.json` in your NALA-MCP directory:
 
 ```json
 {
-  "targetProjectPath": "/Users/axelcurenobasurto/Web/mas",
+  "targetProjectPath": "/path/to/your/mas/project",
   "testOutputPath": "nala",
   "importPaths": {
     "studioPage": "../../../libs/studio-page.js",
@@ -245,9 +300,11 @@ Update your Cursor settings to include the NALA-MCP server:
   "mcpServers": {
     "nala-mcp": {
       "command": "node",
-      "args": ["/Users/axelcurenobasurto/Web/nala-mcp/src/index.js"],
+      "args": ["/path/to/nala-mcp/src/index.js"],
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "MAS_PROJECT_PATH": "/path/to/your/mas/project",
+        "MILO_PROJECT_PATH": "/path/to/your/milo/project"
       }
     }
   }
@@ -785,7 +842,7 @@ node cursor-integration.js run-tests fries css true firefox 45000
 After generating tests, you can run them manually:
 
 ```bash
-cd /Users/axelcurenobasurto/Web/mas
+cd /path/to/your/mas/project
 
 # For local testing
 LOCAL_TEST_LIVE_URL="http://localhost:3000" npx playwright test nala/studio/commerce/fries/tests/fries_css.test.js --project=mas-live-chromium --headed
@@ -963,7 +1020,7 @@ To run tests locally with the MAS repository:
 
 1. Start your local server in the MAS repository:
    ```bash
-   cd /Users/axelcurenobasurto/Web/mas
+   cd /path/to/your/mas/project
    npm run studio
    ```
 

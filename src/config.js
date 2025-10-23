@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { homedir } from 'os';
@@ -58,18 +59,69 @@ function getConfigPath() {
 }
 
 /**
+ * Load configuration from environment variables
+ * @returns {Config|null} Configuration object from env vars or null
+ */
+function loadConfigFromEnv() {
+  const masPath = process.env.MAS_PROJECT_PATH;
+  const miloPath = process.env.MILO_PROJECT_PATH;
+  const defaultProject = process.env.DEFAULT_PROJECT || 'mas';
+  const testOutputPath = process.env.TEST_OUTPUT_PATH || 'nala';
+
+  if (!masPath && !miloPath) {
+    return null;
+  }
+
+  const projects = {};
+
+  if (masPath) {
+    projects.mas = {
+      path: masPath,
+      type: 'mas',
+      testOutputPath,
+      importPaths: DEFAULT_MAS_IMPORT_PATHS,
+    };
+  }
+
+  if (miloPath) {
+    projects.milo = {
+      path: miloPath,
+      type: 'milo',
+      testOutputPath,
+      importPaths: DEFAULT_MILO_IMPORT_PATHS,
+    };
+  }
+
+  return {
+    projects,
+    defaultProject: projects[defaultProject] ? defaultProject : Object.keys(projects)[0],
+  };
+}
+
+/**
  * Load configuration from file or create default
+ * Priority: 1) Environment variables, 2) Config file, 3) Default config
  * @returns {Config} Configuration object
  */
 export function loadConfig() {
+  const envConfig = loadConfigFromEnv();
+  if (envConfig) {
+    return envConfig;
+  }
+
   const configPath = getConfigPath();
 
   if (existsSync(configPath)) {
     try {
       const content = readFileSync(configPath, 'utf-8');
-      const config = JSON.parse(content);
-      
-      // Handle legacy config format
+      let config;
+      try {
+        config = JSON.parse(content);
+      } catch (parseError) {
+        console.error('Failed to parse config file:', parseError.message);
+        return DEFAULT_CONFIG;
+      }
+
       if (config.targetProjectPath && !config.projects) {
         const legacyProject = {
           path: config.targetProjectPath,
@@ -82,7 +134,7 @@ export function loadConfig() {
           defaultProject: 'mas',
         };
       }
-      
+
       return { ...DEFAULT_CONFIG, ...config };
     } catch (error) {
       console.error('Error loading config:', error.message);

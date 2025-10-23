@@ -1,8 +1,45 @@
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve, normalize } from 'path';
 import { getCardTypeMetadata } from './variant-reader.js';
 import { detectSurface as detectVariantSurface, getVariant } from './variant-registry.js';
 import { getTargetProjectRoot, getTestOutputPath, getProjectType } from '../config.js';
+
+function validatePath(targetPath, projectRoot) {
+    const normalizedTarget = normalize(targetPath);
+    const resolvedPath = resolve(normalizedTarget);
+    const resolvedRoot = resolve(projectRoot);
+
+    if (!resolvedPath.startsWith(resolvedRoot)) {
+        throw new Error(`Path traversal detected: ${targetPath} is outside project root`);
+    }
+
+    return resolvedPath;
+}
+
+function sanitizeFileName(fileName) {
+    const validPattern = /^[a-zA-Z0-9_\-\.]+$/;
+    if (!validPattern.test(fileName)) {
+        throw new Error(`Invalid file name: ${fileName} contains invalid characters`);
+    }
+    if (fileName.includes('..')) {
+        throw new Error(`Invalid file name: ${fileName} contains path traversal sequence`);
+    }
+    return fileName;
+}
+
+function sanitizeCardType(cardType) {
+    const validPattern = /^[a-z0-9\-]+$/;
+    if (!validPattern.test(cardType)) {
+        throw new Error(`Invalid card type: ${cardType} contains invalid characters`);
+    }
+    if (cardType.includes('..') || cardType.includes('/')) {
+        throw new Error(`Invalid card type: ${cardType} contains path traversal sequence`);
+    }
+    if (cardType.length > 50) {
+        throw new Error(`Invalid card type: ${cardType} exceeds maximum length`);
+    }
+    return cardType;
+}
 
 /**
  * Get the surface for a given card type
@@ -88,16 +125,23 @@ export function getNALAFilePath(cardType, fileName, subDir = null) {
  * @returns {string} The path where the file was saved
  */
 export function saveToNALAStructure(cardType, fileName, content, subDir = null) {
+    sanitizeCardType(cardType);
+    sanitizeFileName(fileName);
+    if (subDir) {
+        sanitizeFileName(subDir);
+    }
+
     const filePath = getNALAFilePath(cardType, fileName, subDir);
+    const testOutputPath = getTestOutputPath();
+
+    validatePath(filePath, testOutputPath);
+
     const dirPath = dirname(filePath);
-    
-    // Create directory if it doesn't exist
+
     mkdirSync(dirPath, { recursive: true });
-    
-    // Write the file
+
     writeFileSync(filePath, content, 'utf-8');
-    
-    // Return relative path for display
+
     const relativePath = join(getNALADirectoryPath(cardType), subDir || '', fileName);
     return relativePath;
 }
@@ -212,16 +256,17 @@ export function getMiloFilePath(type, fileName, category = 'block', projectName)
  */
 export async function writeTestFile(filePath, content) {
     try {
+        const testOutputPath = getTestOutputPath();
+        validatePath(filePath, testOutputPath);
+
         const dirPath = dirname(filePath);
-        
-        // Create directory if it doesn't exist
+
         if (!existsSync(dirPath)) {
             mkdirSync(dirPath, { recursive: true });
         }
-        
-        // Write the file
+
         writeFileSync(filePath, content, 'utf-8');
-        
+
         return {
             success: true,
             path: filePath,

@@ -13,12 +13,29 @@ export class NALATestRunner {
         this.rootPath = getTargetProjectRoot();
     }
 
+    validateInput(value, name) {
+        const validPattern = /^[a-zA-Z0-9_\/-]+$/;
+        if (!validPattern.test(value)) {
+            throw new Error(`Invalid ${name}: contains invalid characters`);
+        }
+        if (value.length > 100) {
+            throw new Error(`Invalid ${name}: exceeds maximum length`);
+        }
+    }
+
     async runNALATest(testTag, branch = 'local', mode = 'headless', milolibs = 'local') {
-        const command = `npm run nala branch ${branch} ${testTag} mode=${mode} milolibs=${milolibs}`;
-        console.log(`Running NALA test: ${command}`);
-        
+        this.validateInput(branch, 'branch');
+        this.validateInput(testTag, 'testTag');
+        this.validateInput(mode, 'mode');
+        this.validateInput(milolibs, 'milolibs');
+
+        const command = 'npm';
+        const args = ['run', 'nala', 'branch', branch, testTag, `mode=${mode}`, `milolibs=${milolibs}`];
+
+        console.log(`Running NALA test: ${command} ${args.join(' ')}`);
+
         try {
-            const { stdout, stderr } = await execAsync(command, {
+            const { stdout, stderr } = await execAsync(`${command} ${args.join(' ')}`, {
                 cwd: this.rootPath,
                 maxBuffer: 1024 * 1024 * 10
             });
@@ -118,9 +135,15 @@ export class NALATestRunner {
     }
 
     async extractCardProperties(cardId, branch = 'main', milolibs = 'local') {
+        this.validateInput(cardId, 'cardId');
+        this.validateInput(branch, 'branch');
+        this.validateInput(milolibs, 'milolibs');
+
+        const isLocalDev = milolibs === 'local';
+
         const browser = await chromium.launch({ headless: false });
         const context = await browser.newContext({
-            ignoreHTTPSErrors: true,
+            ignoreHTTPSErrors: isLocalDev,
             permissions: ['clipboard-read', 'clipboard-write']
         });
         

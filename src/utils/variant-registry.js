@@ -56,7 +56,18 @@ class VariantRegistry {
         try {
             if (existsSync(defaultVariantsPath)) {
                 const content = readFileSync(defaultVariantsPath, 'utf-8');
-                const data = JSON.parse(content);
+                let data;
+                try {
+                    data = JSON.parse(content);
+                } catch (parseError) {
+                    console.error('Failed to parse default variants JSON:', parseError.message);
+                    return;
+                }
+
+                if (!data || !Array.isArray(data.variants)) {
+                    console.error('Invalid variants data structure');
+                    return;
+                }
 
                 data.variants.forEach(variant => {
                     if (variant.value !== 'all') {
@@ -83,7 +94,13 @@ class VariantRegistry {
 
             if (existsSync(configPath)) {
                 const content = readFileSync(configPath, 'utf-8');
-                const config = JSON.parse(content);
+                let config;
+                try {
+                    config = JSON.parse(content);
+                } catch (parseError) {
+                    console.error('Failed to parse config variants JSON:', parseError.message);
+                    return;
+                }
 
                 // Load custom variants
                 if (config.variants) {

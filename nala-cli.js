@@ -401,8 +401,15 @@ async function main() {
                     process.exit(1);
                 }
                 const [, configFile, genConfigTestType] = args;
-                const configContent = readFileSync(configFile, 'utf-8');
-                const configData = JSON.parse(configContent);
+                let configContent;
+                let configData;
+                try {
+                    configContent = readFileSync(configFile, 'utf-8');
+                    configData = JSON.parse(configContent);
+                } catch (error) {
+                    console.error('Failed to read or parse config file:', error.message);
+                    process.exit(1);
+                }
                 
                 const genFromConfigResult = await runMCPServer(
                     'generate-from-extracted-config',
@@ -529,8 +536,8 @@ Milo Test Generation Commands:
 
 Examples:
   # Project Management
-  node nala-cli.js add-project mas /Users/axel/Web/mas mas
-  node nala-cli.js add-project milo /Users/axel/Web/milo milo
+  node nala-cli.js add-project mas /path/to/your/mas/project mas
+  node nala-cli.js add-project milo /path/to/your/milo/project milo
   node nala-cli.js show-config
   
   # MAS Tests
